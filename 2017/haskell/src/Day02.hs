@@ -29,6 +29,7 @@ day02_2 s = show $ sum $ do
     return $ a `div` b
 
 
+
 -- helpers
 
 readSpreadsheet :: String -> [[Int]]
