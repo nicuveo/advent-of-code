@@ -28,8 +28,8 @@ getInput :: String -> Int -> IO String
 getInput dir day = dropWhileEnd isSpace <$> readFile filename
   where filename = dir </> show day ++ ".in"
 
-solutions :: [(Int, Solution)]
-solutions = zip [1..] [day1]
+solutions :: [(Int, [Solution])]
+solutions = zip [1..] [[day1_1, day1_2]]
 
 
 
@@ -39,7 +39,7 @@ main :: IO ()
 main = do
   args <- getArgs
   when (length args /= 1) $ getProgName >>= printUsageAndDie
-  let run (i, s) = s <$> getInput (head args) i
-  forM_ solutions $ \solution@(day, s) -> do
+  let run day fun = fun <$> getInput (head args) day
+  forM_ solutions $ \(day, parts) -> do
     printf "# day %d\n" day
-    run solution >>= putStrLn
+    forM_ parts $ putStrLn <=< run day
