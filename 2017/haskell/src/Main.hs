@@ -16,6 +16,7 @@ import           Text.Printf
 
 import           Common
 import           Day01
+import           Day02
 
 
 
@@ -29,7 +30,8 @@ getInput dir day = dropWhileEnd isSpace <$> readFile filename
   where filename = dir </> printf "%02d" day ++ ".in"
 
 solutions :: [(Int, [Solution])]
-solutions = zip [1..] [[day01_1, day01_2]]
+solutions = zip [1..] [[day01_1, day01_2],
+                       [day02_1, day02_2]]
 
 
 
