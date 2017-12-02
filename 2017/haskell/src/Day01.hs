@@ -6,14 +6,16 @@ module Day01 (day01_1, day01_2) where
 
 -- import
 
-import           Common
 import           Data.Char
+
+import           Common
 
 
 
 -- solution
 
 day01_1 :: Solution
+day01_1 [] = error "day01_1: malformed input"
 day01_1 l1@(x:xs) = show $ sum [ digitToInt a | (a,b) <- zip l1 l2, a == b ]
   where l2 = xs ++ [x]
 

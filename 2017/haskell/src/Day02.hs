@@ -6,10 +6,10 @@ module Day02 (day02_1, day02_2) where
 
 -- import
 
-import           Common
 import           Control.Monad
-import           Data.Char
 import           Data.List
+
+import           Common
 
 
 
