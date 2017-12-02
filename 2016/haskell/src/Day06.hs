@@ -7,19 +7,17 @@ module Day06 (day06_1, day06_2) where
 -- import
 
 import           Common
+import           Data.List
 
 
 
 -- solution
 
 day06_1 :: Solution
-day06_1 = undefined
+day06_1 = map choose . transpose . lines
+  where choose = head . last . sortOn length . group . sort
 
 
 day06_2 :: Solution
-day06_2 = undefined
-
-
-
--- helpers
-
+day06_2 = map choose . transpose . lines
+  where choose = head . head . sortOn length . group . sort
