@@ -15,7 +15,7 @@ import           System.FilePath.Posix
 import           Text.Printf
 
 import           Common
-import           Day1
+import           Day01
 
 
 
@@ -29,7 +29,7 @@ getInput dir day = dropWhileEnd isSpace <$> readFile filename
   where filename = dir </> show day ++ ".in"
 
 solutions :: [(Int, [Solution])]
-solutions = zip [1..] [[day1_1, day1_2]]
+solutions = zip [1..] [[day01_1, day01_2]]
 
 
 
