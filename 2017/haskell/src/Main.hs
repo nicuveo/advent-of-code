@@ -7,6 +7,8 @@ module Main where
 -- imports
 
 import           Control.Monad
+import           Data.Char
+import           Data.List
 import           System.Environment
 import           System.Exit
 import           System.FilePath.Posix
@@ -16,13 +18,14 @@ import           Common
 import           Day1
 
 
+
 -- helpers
 
 printUsageAndDie :: String -> IO ()
 printUsageAndDie cmd = die $ "usage: " ++ cmd ++ " path_to_input_dir"
 
 getInput :: String -> Int -> IO String
-getInput dir day = readFile filename
+getInput dir day = dropWhileEnd isSpace <$> readFile filename
   where filename = dir </> show day ++ ".in"
 
 solutions :: [(Int, Solution)]
