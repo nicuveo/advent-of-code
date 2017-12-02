@@ -6,8 +6,9 @@ module Day06 (day06_1, day06_2) where
 
 -- import
 
-import           Common
 import           Data.List
+
+import           Common
 
 
 

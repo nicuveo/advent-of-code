@@ -6,11 +6,12 @@ module Day07 (day07_1, day07_2) where
 
 -- import
 
-import           Common
 import           Data.Either.Utils
 import           Data.List
 import           Data.List.Split
 import           Text.Parsec
+
+import           Common
 
 
 
