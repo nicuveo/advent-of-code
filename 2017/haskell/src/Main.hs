@@ -26,7 +26,7 @@ printUsageAndDie cmd = die $ "usage: " ++ cmd ++ " path_to_input_dir"
 
 getInput :: String -> Int -> IO String
 getInput dir day = dropWhileEnd isSpace <$> readFile filename
-  where filename = dir </> show day ++ ".in"
+  where filename = dir </> printf "%02d" day ++ ".in"
 
 solutions :: [(Int, [Solution])]
 solutions = zip [1..] [[day01_1, day01_2]]
