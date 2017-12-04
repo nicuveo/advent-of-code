@@ -15,8 +15,17 @@ import           Common
 -- solution
 
 day04_1 :: Solution
-day04_1 input = show $ sum [ 1 | l <- words <$> lines input, l == nub l ]
+day04_1 pws = show $ sum [ 1 | l <- words <$> lines pws, check l ]
 
 
 day04_2 :: Solution
-day04_2 input = show $ sum [ 1 | l <- map sort . words <$> lines input, l == nub l ]
+day04_2 pws = show $ sum [ 1 | l <- map sort . words <$> lines pws, check l ]
+
+
+
+-- helpers
+
+check :: Eq a => [a] -> Bool
+check []     = True
+check (x:xs) = notElem x xs && check xs
+-- check l = l == nub l
