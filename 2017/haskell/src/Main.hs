@@ -54,33 +54,32 @@ getInput dir day = dropWhileEnd isSpace <$> readFile filename
   where filename = dir </> printf "%02d" day ++ ".in"
 
 solutions :: [(Int, [Solution])]
-solutions = zip [1..] [[day01_1, day01_2],
-                       [day02_1, day02_2],
-                       [day03_1, day03_2],
-                       [day04_1, day04_2],
-                       [day05_1, day05_2],
-                       [day06_1, day06_2],
-                       [day07_1, day07_2],
-                       [day08_1, day08_2],
-                       [day09_1, day09_2],
-                       [day10_1, day10_2],
-                       [day11_1, day11_2],
-                       [day12_1, day12_2],
-                       [day13_1, day13_2],
-                       [day14_1, day14_2],
-                       [day15_1, day15_2],
-                       [day16_1, day16_2],
-                       [day17_1, day17_2],
-                       [day18_1, day18_2],
-                       [day19_1, day19_2],
-                       [day20_1, day20_2],
-                       [day21_1, day21_2],
-                       [day22_1, day22_2],
-                       [day23_1, day23_2],
-                       [day24_1, day24_2],
-                       [day25_1, day25_2]]
-
-
+solutions = zip [1 ..] [ [day01_1, day01_2]
+                       , [day02_1, day02_2]
+                       , [day03_1, day03_2]
+                       , [day04_1, day04_2]
+                       , [day05_1, day05_2]
+                       , [day06_1, day06_2]
+                       , [day07_1, day07_2]
+                       , [day08_1, day08_2]
+                       , [day09_1, day09_2]
+                       , [day10_1, day10_2]
+                       , [day11_1, day11_2]
+                       , [day12_1, day12_2]
+                       , [day13_1, day13_2]
+                       , [day14_1, day14_2]
+                       , [day15_1, day15_2]
+                       , [day16_1, day16_2]
+                       , [day17_1, day17_2]
+                       , [day18_1, day18_2]
+                       , [day19_1, day19_2]
+                       , [day20_1, day20_2]
+                       , [day21_1, day21_2]
+                       , [day22_1, day22_2]
+                       , [day23_1, day23_2]
+                       , [day24_1, day24_2]
+                       , [day25_1, day25_2]
+                       ]
 
 -- main
 

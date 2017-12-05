@@ -16,8 +16,8 @@ import           Common
 -- solution
 
 day02_1 :: Solution
-day02_1 s = show $ sum [ maxVal - minVal | (minVal, maxVal) <- map minMax $ readSpreadsheet s ]
---                     [ maximum line - minimum line | line <- readSpreadsheet s ]
+day02_1 s = show $ sum [maxVal - minVal | (minVal, maxVal) <- map minMax $ readSpreadsheet s]
+--                     [maximum line - minimum line | line <- readSpreadsheet s]
 
 day02_2 :: Solution
 day02_2 s = show $ sum $ do
@@ -33,7 +33,7 @@ day02_2 s = show $ sum $ do
 -- helpers
 
 readSpreadsheet :: String -> [[Int]]
-readSpreadsheet s = [ map read $ words line | line <- lines s ]
+readSpreadsheet s = [map read $ words line | line <- lines s]
 --                = map read . words <$> lines s
 
 minMax :: (Ord a, Bounded a) => [a] -> (a, a)

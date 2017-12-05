@@ -24,22 +24,6 @@ day03_2 input = show $ head [n | n <- getV2Val <$> [1..], n > value]
   where value = read input
 
 
-{-
-
-17  16  15  14  13
-18   5   4   3  12
-19   6   1   2  11
-20   7   8   9  10
-21  22  23---> ...
-
-147  142  133  122   59
-304    5    4    2   57
-330   10    1    1   54
-351   11   23   25   26
-362  747  806--->   ...
-
--}
-
 
 -- helpers
 
@@ -54,7 +38,7 @@ getPos cell = case side of
                3 -> ( v, -u)
                _ -> error "getPos: logic error?"
   where
-    size  = head [ n | n <- [1,3..], n*n >= cell ]
+    size  = head [n | n <- [1,3..], n*n >= cell]
     start = (size - 2) ^ 2 + 1
     side  = (cell - start) `div` (size - 1)
     dist  = (cell - start) `mod` (size - 1)

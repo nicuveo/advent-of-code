@@ -15,11 +15,11 @@ import           Common
 -- solution
 
 day04_1 :: Solution
-day04_1 pws = show $ sum [ 1 | l <- words <$> lines pws, check l ]
+day04_1 pws = show $ sum [1 | l <- words <$> lines pws, check l]
 
 
 day04_2 :: Solution
-day04_2 pws = show $ sum [ 1 | l <- map sort . words <$> lines pws, check l ]
+day04_2 pws = show $ sum [1 | l <- map sort . words <$> lines pws, check l]
 
 
 
