@@ -18,33 +18,33 @@ import           Common
 -- solution
 
 day07_1 :: Solution
-day07_1 input = show $ length [ ()
-                              | (outer, inner) <- parseIPs <$> lines input
-                              , any containsABBA outer
-                              , not $ any containsABBA inner
-                              ]
+day07_1 input = show $ sum [ 1
+                           | (outer, inner) <- parseIPs <$> lines input
+                           , any containsABBA outer
+                           , not $ any containsABBA inner
+                           ]
 
 
 day07_2 :: Solution
-day07_2 input = show $ length [ ()
-                              | (outer, inner) <- parseIPs <$> lines input
-                              , let abas = outer >>= findABAs
-                                    babs = inner >>= findBABs
-                              , not $ null $ intersect abas babs
-                              ]
+day07_2 input = show $ sum [ 1
+                           | (outer, inner) <- parseIPs <$> lines input
+                           , let abas = outer >>= findABAs
+                                 babs = inner >>= findBABs
+                           , not $ null $ intersect abas babs
+                           ]
 
 
 
 -- helpers
 
 containsABBA :: String -> Bool
-containsABBA s = or [ a == d && b == c && a /= b | (a:b:c:d:_) <- tails s ]
+containsABBA s = or [a == d && b == c && a /= b | (a:b:c:d:_) <- tails s]
 
 findABAs :: String -> [String]
-findABAs s = [ [a,b] | (a:b:c:_) <- tails s, a == c && a /= b ]
+findABAs s = [[a,b] | (a:b:c:_) <- tails s, a == c && a /= b]
 
 findBABs :: String -> [String]
-findBABs s = [ [b,a] | (a:b:c:_) <- tails s, a == c && a /= b ]
+findBABs s = [[b,a] | (a:b:c:_) <- tails s, a == c && a /= b]
 
 parseIPs :: String -> ([String], [String])
 parseIPs = fromRight . parse line ""

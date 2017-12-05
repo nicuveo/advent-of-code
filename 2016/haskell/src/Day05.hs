@@ -20,7 +20,7 @@ import           Common
 -- solution
 
 day05_1 :: Solution
-day05_1 did = take 8 [ c | i <- [0..], ('0':'0':'0':'0':'0':c:_) <- [hash did i] ]
+day05_1 did = take 8 [c | i <- [0..], ('0':'0':'0':'0':'0':c:_) <- [hash did i]]
 
 day05_2 :: Solution
 day05_2 did = map snd $ sort $ try [] 0

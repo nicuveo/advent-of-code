@@ -46,10 +46,10 @@ expanded = length <$> many1 upper
 
 repeatedPattern :: Parsec String u (Int, String)
 repeatedPattern = do
-  void $ char '('
+  char '('
   n <- read <$> many1 digit
-  void $ char 'x'
+  char 'x'
   t <- read <$> many1 digit
-  void $ char ')'
+  char ')'
   p <- count n anyChar
   return (t, p)

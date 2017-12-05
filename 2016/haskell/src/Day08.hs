@@ -6,7 +6,6 @@ module Day08 where
 
 -- import
 
-import           Control.Monad
 import           Data.Array
 import           Data.Bool
 import           Data.Either.Utils
@@ -51,21 +50,21 @@ parseCommand :: String -> Command
 parseCommand = fromRight . parse line ""
   where line = rect <|> row <|> col
         rect = try $ do
-          void $ string "rect "
+          string "rect "
           w <- read <$> many1 digit
-          void $ char 'x'
+          char 'x'
           h <- read <$> many1 digit
           return $ Rect w h
         row = try $ do
-          void $ string "rotate row y="
+          string "rotate row y="
           r <- read <$> many1 digit
-          void $ string " by "
+          string " by "
           d <- read <$> many1 digit
           return $ Row r d
         col = try $ do
-          void $ string "rotate column x="
+          string "rotate column x="
           c <- read <$> many1 digit
-          void $ string " by "
+          string " by "
           d <- read <$> many1 digit
           return $ Col c d
 
@@ -78,4 +77,4 @@ rows r = [0 .. r-1]
 cols c = [0 .. c-1]
 
 printScreen :: Screen -> [String]
-printScreen s = [ [bool '.' '#' $ s ! (r, c) | c <- cols screenW] | r <- rows screenH ]
+printScreen s = [[bool '.' '#' $ s ! (r, c) | c <- cols screenW] | r <- rows screenH]

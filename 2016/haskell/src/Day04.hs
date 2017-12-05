@@ -37,7 +37,7 @@ day04_2 input = show $ do
   guard $ "northpole" `isSubsequenceOf` realName
   return (realName, sector)
   where score s = (-length s, head s)
-        toReal d s = [ chr $ 97 + (ord c - 97 + d) `mod` 26 | c <- s]
+        toReal d s = [chr $ 97 + (ord c - 97 + d) `mod` 26 | c <- s]
 
 
 
