@@ -1,3 +1,7 @@
+{-# LANGUAGE BangPatterns #-}
+
+
+
 -- module
 
 module Day06 (day06_1, day06_2) where
@@ -21,7 +25,7 @@ import           Common
 
 day06_1 :: Solution
 day06_1 input = show $ runST $ walk1 0 [] =<< readBanks input
-  where walk1 step hist banks = do
+  where walk1 !step hist banks = do
           this <- freeze banks
           if this `elem` hist
             then return step
@@ -31,12 +35,9 @@ day06_1 input = show $ runST $ walk1 0 [] =<< readBanks input
               redistribute banks maxVal size (start + 1)
               walk1 (step + 1) (this : hist) banks
 
-
-
-
 day06_2 :: Solution
-day06_2 input = show $ runST $ walk2 0 [] =<< readBanks input
-  where walk2 step hist banks = do
+day06_2 input = show $ runST $ walk2 [] =<< readBanks input
+  where walk2 hist banks = do
           this <- freeze banks
           case elemIndex this hist of
             Just n  -> return $ n + 1
@@ -44,7 +45,8 @@ day06_2 input = show $ runST $ walk2 0 [] =<< readBanks input
               let (size, maxVal, start) = extract this
               writeArray banks start 0
               redistribute banks maxVal size (start + 1)
-              walk2 (step + 1) (this : hist) banks
+              walk2 (this : hist) banks
+
 
 
 -- helpers
