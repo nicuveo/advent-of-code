@@ -6,10 +6,9 @@ module Day07 (day07_1, day07_2) where
 
 -- import
 
-import           Data.Either.Utils
 import           Data.Function
 import           Data.List
-import           Data.Map.Strict   hiding (null, (\\))
+import           Data.Map.Strict hiding (map, null, (\\))
 import           Data.Maybe
 import           Data.Tree
 import           Text.Parsec
@@ -55,9 +54,9 @@ type TowerTree = Tree Plate
 type TowerMap  = Map String (Int, [String])
 
 parseTower :: String -> TowerMap
-parseTower input = fromList $ fromRight . parse line "" <$> lines input
+parseTower = fromList . map (parseWith line) . lines
   where name   = nameParser
-        weigth = between (char '(') (char ')') intParser
+        weigth = betweenParens intParser
         arrow  = spaces >> string "->" >> spaces
         line = do
           n <- name

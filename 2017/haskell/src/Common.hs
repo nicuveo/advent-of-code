@@ -30,6 +30,12 @@ intParser = fmap read $ many1 $ oneOf "-0123456789"
 tryAll :: [Parsec String () a] -> Parsec String () a
 tryAll parsers = foldr1 (<|>) (map try parsers) <?> "tryAll"
 
+betweenBraces :: Parsec String () a -> Parsec String () a
+betweenBraces = between (char '{') (char '}')
+
+betweenParens :: Parsec String () a -> Parsec String () a
+betweenParens = between (char '(') (char ')')
+
 readInt :: String -> Int
 readInt = read
 

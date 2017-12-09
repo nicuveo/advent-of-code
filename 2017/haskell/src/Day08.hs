@@ -35,7 +35,7 @@ data Instruction = Inst { _iReg   :: String
                         }
 
 compile :: String -> Instruction
-compile = either (error . show) id . parse line ""
+compile = parseWith line
   where name = nameParser
         val  = intParser
         mul  = tryAll [inc, dec]
