@@ -38,7 +38,6 @@ step1 (x, y) ('R' : n) = (read n - y,  x)
 step1 (x, y) ('L' : n) = (read n + y, -x)
 step1 _ _              = error "day01_1: file format error"
 
-
 step2 :: (Vector, [Vector]) -> String -> (Vector, [Vector])
 step2 (d, hist) ('R' : n) = (rotateR d, hist ++ generate (last hist) (rotateR d) (read n))
 step2 (d, hist) ('L' : n) = (rotateL d, hist ++ generate (last hist) (rotateL d) (read n))
