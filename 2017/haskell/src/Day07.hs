@@ -56,13 +56,13 @@ type TowerMap  = Map String (Int, [String])
 
 parseTower :: String -> TowerMap
 parseTower input = fromList $ fromRight . parse line "" <$> lines input
-  where name   = many1 lower
-        weigth = between (char '(') (char ')') $ many1 digit
+  where name   = nameParser
+        weigth = between (char '(') (char ')') intParser
         arrow  = spaces >> string "->" >> spaces
         line = do
           n <- name
           spaces
-          w <- read <$> weigth
+          w <- weigth
           p <- fmap (fromMaybe []) $ optionMaybe $ do
             arrow
             name `sepBy1` string ", "

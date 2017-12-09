@@ -47,9 +47,6 @@ day05_2 input = show $ runST $ jump 0 0 =<< toArray (map readInt $ lines input)
 
 type IntArray s = STUArray s Int Int
 
-readInt :: String -> Int
-readInt = read
-
 toArray :: [Int] -> ST s (IntArray s)
 toArray l = newListArray (0, length l -1) l
 

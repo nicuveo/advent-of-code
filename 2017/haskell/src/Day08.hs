@@ -36,12 +36,10 @@ data Instruction = Inst { _iReg   :: String
 
 compile :: String -> Instruction
 compile = either (error . show) id . parse line ""
-  where name = many1 lower
-        val  = read <$> many1 (oneOf "-0123456789")
-        mul  = try inc <|> dec
-        op   = try eq <|> try ne <|>
-               try le <|> try ge <|>
-               try lt <|> gt
+  where name = nameParser
+        val  = intParser
+        mul  = tryAll [inc, dec]
+        op   = tryAll [eq, ne, le, ge, lt, gt]
         inc  = string "inc" >> return 1
         dec  = string "dec" >> return (-1)
         eq   = string "=="  >> return (==)
