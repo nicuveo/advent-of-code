@@ -20,4 +20,4 @@ executable aoc2017
                        Day10,Day11,Day12,Day13,Day14,Day15,Day16,Day17,Day18,
                        Day19,Day20,Day21,Day22,Day23,Day24,Day25
   build-depends:       base >= 4.7 && < 5,
-                       MissingH,QuickCheck,array,containers,filepath,parsec,safe
+                       MissingH,QuickCheck,array,containers,filepath,parsec,safe,split
