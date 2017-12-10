@@ -25,10 +25,11 @@ day10_1 = show . V.product . V.take 2 . sVec . foldl' step start . map read . sp
   where start = State (indices 256) 0 0
 
 day10_2 :: Solution
-day10_2 = toHex <=< map (foldl1' xor) . chunksOf 16 . getList . foldl' step start . concat . replicate 64 . (++ extra) . map ord
+day10_2 = toHex <=< map (foldl1' xor) . chunksOf 16 . getList . foldl' step start . times 64 . (++ extra) . map ord
   where start = State (indices 256) 0 0
         extra = [17, 31, 73, 47, 23]
         toHex = printf "%02x"
+        times = concat ... replicate
 
 
 
