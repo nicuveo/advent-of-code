@@ -22,7 +22,7 @@ day02_1 s = show $ sum [maxVal - minVal | (minVal, maxVal) <- map minMax $ readS
 day02_2 :: Solution
 day02_2 s = show $ sum $ do
   line <- readSpreadsheet s
-  take 1 $ do
+  do
     a <- line
     b <- line
     guard $ a > b && a `mod` b == 0
