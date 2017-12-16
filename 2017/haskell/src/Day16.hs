@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns      #-}
 {-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures    #-}
@@ -53,30 +54,28 @@ day16_MV2_2 = danceMV 1000000000 . pack . parseInstructions
 
 danceMV :: KnownNat n => Int -> [Instruction n] -> String
 danceMV times insts =
-  printf "MV, after %3d dance(s) of %5d instructions: %s " steps (L.length insts) $ toList res
-  where n = instSize $ L.head insts
-        (steps, res) = runST $ do
-          origin <- thaw $ fromList $ mkDancers n
-          backup <- freeze origin
-          _dance times 0 backup origin
-        _dance t i b dancers = do
+  printf "MV, after %3d dance(s) of %5d instructions: %s " s (L.length insts) $ toList res
+  where n        = instSize $ L.head insts
+        start    = fromList $ mkDancers n
+        (s, res) = runST $ dance_ times 0 =<< thaw start
+        dance_ t i dancers = do
           current <- unsafeFreeze dancers
-          let nt = if t < times && current == b
+          let nt = if t < times && current == start
                    then mod times $ times - t
                    else t
           if nt == 0
           then return (i :: Int, current)
           else do
             ds <- unsafeThaw current
-            _dance (nt-1) (i+1) b =<< foldM executeMV ds insts
+            dance_ (nt-1) (i+1) =<< foldM executeMV ds insts
 
 executeMV :: KnownNat n => MVector s Name -> Instruction n -> ST s (MVector s Name)
 executeMV dancers i@(Spin x) = doSpin (instSize i) x <$> unsafeFreeze dancers >>= unsafeThaw
 executeMV dancers (Exchange a b) = unsafeSwap dancers a b >> return dancers
 executeMV dancers (Partner x y) = do
   names <- unsafeFreeze dancers
-  let a = fromJust $ elemIndex x names
-      b = fromJust $ elemIndex y names
+  let !a = fromJust $ elemIndex x names
+      !b = fromJust $ elemIndex y names
   newDancers <- unsafeThaw names
   unsafeSwap newDancers a b
   return newDancers
@@ -113,17 +112,17 @@ day16_IV2_2 = danceIV 1000000000 . pack . parseInstructions
 
 danceIV :: KnownNat n => Int -> [Instruction n] -> String
 danceIV times insts =
-  printf "IV, after %3d dance(s) of %5d instructions: %s " steps (L.length insts) $ toList res
-  where n = instSize $ L.head insts
-        start = fromList $ mkDancers n
-        (steps, res) = _dance times 0 start
-        _dance t i dancers =
+  printf "IV, after %3d dance(s) of %5d instructions: %s " s (L.length insts) $ toList res
+  where n        = instSize $ L.head insts
+        start    = fromList $ mkDancers n
+        (s, res) = dance_ times 0 start
+        dance_ t i dancers =
           let nt = if t < times && start == dancers
                    then mod times $ times - t
                    else t
           in  if nt == 0
               then (i :: Int, dancers)
-              else _dance (nt-1) (i+1) $ L.foldl' executeIV dancers insts
+              else dance_ (nt-1) (i+1) $ L.foldl' executeIV dancers insts
 
 executeIV :: KnownNat n => Vector Name -> Instruction n -> Vector Name
 executeIV dancers i@(Spin x)     = doSpin (instSize i) x dancers
