@@ -69,7 +69,8 @@ solutions = zip [1 ..] [ [day01_1, day01_2]
                        , [day13_1, day13_2]
                        , [day14_1, day14_2]
                        , [day15_1, day15_2]
-                       , [ day16_MV1_1, day16_MV1_2
+                       , [ day16_1,     day16_2
+                         , day16_MV1_1, day16_MV1_2
                          , day16_MV2_1, day16_MV2_2
                          , day16_IV1_1, day16_IV1_2
                          , day16_IV2_1, day16_IV2_2
