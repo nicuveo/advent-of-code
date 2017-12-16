@@ -41,6 +41,16 @@ readInt = read
 
 
 
+-- list helpers
+
+countTrue :: [Bool] -> Int
+countTrue = countIf id
+
+countIf :: (a -> Bool) -> [a] -> Int
+countIf = length ... filter
+
+
+
 -- the blackbird
 
 (...) :: (c -> d) -> (a -> b -> c) -> a -> b -> d
