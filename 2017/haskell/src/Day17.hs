@@ -58,7 +58,7 @@ step steps b = Buffer (beginning ++ [len] ++ end) newPos
 
 fakeStep :: Int -> Int -> Int -> Int -> Int
 fakeStep !steps !currentPos !res !size =
-  if size == 50000000
+  if size == 50000001
   then res
   else fakeStep steps newPos newRes $ size + 1
   where newPos = mod (currentPos + steps) size + 1
