@@ -21,14 +21,17 @@ type Solution = String -> String
 parseWith :: Parsec String () a -> String -> a
 parseWith = either (error . show) id ... flip parse ""
 
+symbol :: String -> Parsec String () String
+symbol s = spaces >> string s
+
 nameParser :: Parsec String () String
-nameParser = many1 lower
+nameParser = spaces >> many1 lower
 
 intParser :: Parsec String () Int
-intParser = fmap read $ many1 $ oneOf "-0123456789"
+intParser = spaces >> fmap read (many1 $ oneOf "-0123456789")
 
 tryAll :: [Parsec String () a] -> Parsec String () a
-tryAll parsers = foldr1 (<|>) (map try parsers) <?> "tryAll"
+tryAll parsers = foldr1 (<|>) (map try parsers)
 
 betweenBraces :: Parsec String () a -> Parsec String () a
 betweenBraces = between (char '{') (char '}')
