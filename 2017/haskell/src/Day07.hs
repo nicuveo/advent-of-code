@@ -56,15 +56,13 @@ type TowerMap  = Map String (Int, [String])
 parseTower :: String -> TowerMap
 parseTower = fromList . map (parseWith line) . lines
   where name   = nameParser
-        weigth = betweenParens intParser
-        arrow  = spaces >> string "->" >> spaces
+        weigth = spaces >> betweenParens intParser
         line = do
           n <- name
-          spaces
           w <- weigth
           p <- fmap (fromMaybe []) $ optionMaybe $ do
-            arrow
-            name `sepBy1` string ", "
+            symbol "->"
+            name `sepBy1` symbol ","
           return (n, (w, p))
 
 mapToTree :: TowerMap -> TowerTree

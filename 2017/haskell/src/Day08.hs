@@ -38,30 +38,24 @@ compile :: String -> Instruction
 compile = parseWith line
   where name = nameParser
         val  = intParser
-        mul  = tryAll [inc, dec]
-        op   = tryAll [eq, ne, le, ge, lt, gt]
-        inc  = string "inc" >> return 1
-        dec  = string "dec" >> return (-1)
-        eq   = string "=="  >> return (==)
-        ne   = string "!="  >> return (/=)
-        le   = string "<="  >> return (<=)
-        ge   = string ">="  >> return (>=)
-        lt   = string "<"   >> return (<)
-        gt   = string ">"   >> return (>)
+        mul  = tryAll [inc, dec] <?> "inc or dec"
+        op   = tryAll [eq, ne, le, ge, lt, gt] <?> "operator"
+        inc  = symbol "inc" >> return 1
+        dec  = symbol "dec" >> return (-1)
+        eq   = symbol "=="  >> return (==)
+        ne   = symbol "!="  >> return (/=)
+        le   = symbol "<="  >> return (<=)
+        ge   = symbol ">="  >> return (>=)
+        lt   = symbol "<"   >> return (<)
+        gt   = symbol ">"   >> return (>)
         line = do
-          reg <- name
-          spaces
-          coeff <- mul
-          spaces
-          delta <- val
-          spaces
-          string "if"
-          spaces
-          comp <- name
-          spaces
+          reg      <- name
+          coeff    <- mul
+          delta    <- val
+          symbol "if"
+          comp     <- name
           operator <- op
-          spaces
-          value <- val
+          value    <- val
           return $ Inst reg (coeff * delta) comp (`operator` value)
 
 regMax :: Registers -> Int
