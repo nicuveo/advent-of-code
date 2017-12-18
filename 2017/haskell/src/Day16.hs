@@ -263,21 +263,9 @@ pack insts = [indexInst, namesInst]
 parseInstructions :: String -> [Instruction 16]
 parseInstructions = parseWith $ inst `sepBy` char ','
   where inst = tryAll [spin, exch, part]
-        spin = do
-          char 's'
-          Spin <$> intParser
-        exch = do
-          char 'x'
-          a <- intParser
-          char '/'
-          b <- intParser
-          return $ Exchange a b
-        part = do
-          char 'p'
-          x <- lower
-          char '/'
-          y <- lower
-          return $ Partner x y
+        spin = Spin     <$> (char 's' >> intParser)
+        exch = Exchange <$> (char 'x' >> intParser) <*> (char '/' >> intParser)
+        part = Partner  <$> (char 'p' >> lower)     <*> (char '/' >> lower)
 
 
 
