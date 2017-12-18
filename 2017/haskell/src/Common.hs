@@ -6,6 +6,7 @@ module Common where
 
 -- import
 
+import           Control.Monad
 import           Text.Parsec
 
 
@@ -28,7 +29,8 @@ nameParser :: Parsec String () String
 nameParser = spaces >> many1 lower
 
 intParser :: Parsec String () Int
-intParser = spaces >> fmap read (many1 $ oneOf "-0123456789")
+intParser = spaces >> fmap read (liftM2 (:) (char '-') number <|> number)
+  where number = many1 digit
 
 tryAll :: [Parsec String () a] -> Parsec String () a
 tryAll parsers = foldr1 (<|>) (map try parsers)
