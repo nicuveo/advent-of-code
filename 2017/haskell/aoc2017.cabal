@@ -1,6 +1,6 @@
 name:                aoc2017
 version:             0.1.0.0
-homepage:            https://github.com/githubuser/haskell#readme
+homepage:            https://github.com/nicuveo/advent-of-code/tree/master/2017/haskell
 license:             OtherLicense
 license-file:        LICENSE
 build-type:          Simple
