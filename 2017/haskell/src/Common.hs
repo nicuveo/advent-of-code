@@ -7,6 +7,8 @@ module Common where
 -- import
 
 import           Control.Monad
+import           Data.Function
+import           Data.List
 import           Text.Parsec
 
 
@@ -54,9 +56,25 @@ countTrue = countIf id
 countIf :: (a -> Bool) -> [a] -> Int
 countIf = length ... filter
 
+minimumOn :: Ord b => (a -> b) -> [a] -> a
+minimumOn = minimumBy . on compare
+
+maximumOn :: Ord b => (a -> b) -> [a] -> a
+maximumOn = maximumBy . on compare
+
 
 
 -- the blackbird
 
 (...) :: (c -> d) -> (a -> b -> c) -> a -> b -> d
 (...) = (.) (.) (.)
+
+
+
+-- other useful combinators
+
+(<.) :: (b -> a -> c) -> (a -> b) -> a -> c
+(<.) = (<*>) . flip
+
+(.>) :: (a -> b -> c) -> (a -> b) -> a -> c
+(.>) = (<*>)
