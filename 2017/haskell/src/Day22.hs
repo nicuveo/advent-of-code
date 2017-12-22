@@ -81,7 +81,9 @@ getState :: MonadState World m => Point -> m NodeState
 getState p = M.findWithDefault Clean p <$> get
 
 setState :: MonadState World m => Point -> NodeState -> m ()
-setState p s = M.insert p s <$> get >>= put
+setState p s = do
+  !newWorld <- M.insert p s <$> get
+  put newWorld
 
 
 
