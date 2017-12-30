@@ -8,15 +8,17 @@ mod common;
 mod day_01;
 mod day_02;
 mod day_03;
+mod day_04;
 
 
 
 // constants
 
-const DAYS: [[fn(&str) -> String; 2]; 3] = [
+const DAYS: [[fn(&str) -> String; 2]; 4] = [
     [day_01::part1, day_01::part2],
     [day_02::part1, day_02::part2],
-    [day_03::part1, day_03::part2]
+    [day_03::part1, day_03::part2],
+    [day_04::part1, day_04::part2]
 ];
 
 
