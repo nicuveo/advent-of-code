@@ -1,4 +1,10 @@
+// imports
+
 use common::parse_int;
+
+
+
+// solutions
 
 pub fn part1(input: &str) -> String {
     let mut res: i32 = 0;
