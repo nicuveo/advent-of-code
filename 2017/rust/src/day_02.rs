@@ -1,3 +1,5 @@
+use common::parse_int;
+
 pub fn part1(input: &str) -> String {
     let mut res: i32 = 0;
     for line in input.lines() {
@@ -26,8 +28,4 @@ pub fn part2(input: &str) -> String {
         }
     }
     return format!("{}", res);
-}
-
-fn parse_int(word: &str) -> i32 {
-    return word.parse().expect(&format!("day02: {} is not a valid int", word));
 }

@@ -4,16 +4,19 @@ use std::env;
 use std::fs::File;
 use std::io::Read;
 
+mod common;
 mod day_01;
 mod day_02;
+mod day_03;
 
 
 
 // constants
 
-const DAYS: [[fn(&str) -> String; 2]; 2] = [
+const DAYS: [[fn(&str) -> String; 2]; 3] = [
     [day_01::part1, day_01::part2],
-    [day_02::part1, day_02::part2]
+    [day_02::part1, day_02::part2],
+    [day_03::part1, day_03::part2]
 ];
 
 
