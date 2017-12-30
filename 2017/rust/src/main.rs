@@ -5,13 +5,15 @@ use std::fs::File;
 use std::io::Read;
 
 mod day_01;
+mod day_02;
 
 
 
 // constants
 
-const DAYS: [[fn(&str) -> String; 2]; 1] = [
-    [day_01::part1, day_01::part2]
+const DAYS: [[fn(&str) -> String; 2]; 2] = [
+    [day_01::part1, day_01::part2],
+    [day_02::part1, day_02::part2]
 ];
 
 
