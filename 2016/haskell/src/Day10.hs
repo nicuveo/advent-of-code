@@ -1,6 +1,7 @@
 -- module
 
-module Day10 (day10_1, day10_2) where
+module Day10 (day10_1, day10_2,
+              isItStillWorking) where
 
 
 
@@ -19,12 +20,12 @@ import           Common
 
 day10_1 :: Solution
 day10_1 input = head $ findBot =<< executeAll (readInput input)
-  where findBot (b,_) = [bot | (bot, chips) <- M.toList b, sort chips == [17, 61]]
+  where findBot world = [bot | (Bot bot, chips) <- M.toList world, sort chips == [17, 61]]
 
 
 day10_2 :: Solution
-day10_2 input = show o
-  where (_,o) = last $ executeAll (readInput input)
+day10_2 input = show $ product $ concat [world M.! Out o | o <- ["0", "1", "2"]]
+  where world = last $ executeAll (readInput input)
 
 
 
@@ -33,30 +34,54 @@ day10_2 input = show o
 type Chip = Int
 type Name = String
 
-type NameMap   = M.Map Name [Chip]
-type BotMap    = NameMap
-type OutputMap = NameMap
+type TargetMap   = M.Map Target [Chip]
 
 data Instruction = Input    Name Chip
                  | Transfer Name Target Target
                  deriving (Show, Eq)
 
-data Target = ToBot    Name
-            | ToOutput Name
-            deriving (Show, Eq)
+data Target = Bot Name
+            | Out Name
+            deriving (Show, Eq, Ord)
 
-type State = (BotMap, OutputMap)
+type State = TargetMap
 
+
+getChips :: Target -> State -> [Chip]
+getChips = M.findWithDefault []
+
+getNumberOfChips :: Target -> State -> Int
+getNumberOfChips = length ... getChips
+
+insertChip :: Target -> Chip -> State -> State
+insertChip target chip = M.alter alt target
+  where alt Nothing      = Just [chip]
+        alt (Just chips) = Just $ chip:chips
+
+isValidTarget :: State -> Target -> Bool
+isValidTarget world (Bot name) = getNumberOfChips (Bot name) world < 2
+isValidTarget _     _          = True
+
+isValid :: State -> Instruction -> Bool
+isValid world (Input name _) = getNumberOfChips (Bot name) world < 2
+isValid world (Transfer source dest1 dest2) =
+  isValidTarget world dest1 &&
+  isValidTarget world dest2 &&
+  getNumberOfChips (Bot source) world == 2
+
+execute :: State -> Instruction -> State
+execute world (Input name chip) = insertChip (Bot name) chip world
+execute world (Transfer source dest1 dest2) =
+  insertChip dest1 c1 $ insertChip dest2 c2 $ M.insert sourceBot [] world
+  where sourceBot = Bot source
+        [c1, c2] = sort $ getChips sourceBot world
 
 executeAll :: [Instruction] -> [State]
-executeAll = executeAll_ (M.empty, M.empty)
+executeAll = executeAll_ M.empty
   where executeAll_ _     []    = []
-        executeAll_ world insts =
-          if null others
-          then error "NO VALID INST!"
-          else nextWorld : executeAll_ nextWorld (skipped ++ tail others)
-          where (skipped, others) = break (isValid world) insts
-                nextWorld = execute world $ head others
+        executeAll_ world insts = nextWorld : executeAll_ nextWorld (skipped ++ others)
+          where (skipped, next : others) = break (isValid world) insts
+                nextWorld = execute world next
 
 
 
@@ -67,8 +92,8 @@ targetName = spaces >> many1 alphaNum
 
 targetParser :: Parser Target
 targetParser = tryAll [botTarget, outTarget]
-  where botTarget = fmap ToBot    $ symbol "bot"    >> targetName
-        outTarget = fmap ToOutput $ symbol "output" >> targetName
+  where botTarget = fmap Bot $ symbol "bot"    >> targetName
+        outTarget = fmap Out $ symbol "output" >> targetName
 
 instructionParser :: Parser Instruction
 instructionParser = tryAll [input, transfer]
@@ -90,34 +115,17 @@ instructionParser = tryAll [input, transfer]
 readInput :: String -> [Instruction]
 readInput = parseWith $ instructionParser `sepBy` newline
 
-getChips :: Name -> NameMap -> [Chip]
-getChips = M.findWithDefault []
-
-isValidTarget :: BotMap -> Target -> Bool
-isValidTarget world (ToBot name) = length (getChips name world) < 2
-isValidTarget _     _            = True
-
-isValid :: State -> Instruction -> Bool
-isValid (b,_) (Input name _) = length (getChips name b) < 2
-isValid (b,_) (Transfer source dest1 dest2) =
-  length (getChips source b) == 2 &&
-  isValidTarget b dest1           &&
-  isValidTarget b dest2
-
-execute :: State -> Instruction -> State
-execute (b,o) (Input name chip) = (M.insert name (chip:chips) b,o)
-  where chips = getChips name b
-execute (b,o) (Transfer source dest1 dest2) =
-  give c1 dest1 $ give c2 dest2 (M.insert source [] b, o)
-  where [c1, c2] = sort $ getChips source b
-        give chip (ToOutput name) (bots,outs) =
-          (bots, M.insert name (chip:getChips name outs) outs)
-        give chip (ToBot name) (bots,outs) =
-          (M.insert name (chip:getChips name bots) bots, outs)
 
 
+-- tests
 
-
-
-
---
+isItStillWorking :: Bool
+isItStillWorking = last (executeAll instructions) == expected
+  where instructions = [ Input "1" 1
+                       , Transfer "1" (Out "1") (Bot "2")
+                       , Input "1" 0
+                       ]
+        expected = M.fromList [ (Bot "1", [])
+                              , (Bot "2", [1])
+                              , (Out "1", [0])
+                              ]
