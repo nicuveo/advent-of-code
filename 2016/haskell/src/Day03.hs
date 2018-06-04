@@ -23,10 +23,3 @@ day03_1 input = show $ sum [1 | [a,b,c] <- triangles, a + b > c]
 day03_2 :: Solution
 day03_2 input = show $ sum [1 | [a,b,c] <- triangles, a + b > c]
   where triangles = map sort $ chunksOf 3 $ join $ transpose $ map readInt . words <$> lines input
-
-
-
--- helpers
-
-readInt :: String -> Int
-readInt = read
