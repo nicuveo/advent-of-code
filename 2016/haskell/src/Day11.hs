@@ -1,12 +1,14 @@
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE BangPatterns  #-}
+{-# LANGUAGE TupleSections #-}
 
 
 
 -- module
 
-module Day11 (day11_1, day11_2,
-              findPath, findPathLength,
-              runTests) where
+module Day11 (day11_1,
+              day11_2,
+              runTests,
+              benchmark) where
 
 
 
@@ -16,7 +18,11 @@ import           Data.Function
 import           Data.List             as L
 import qualified Data.Map.Strict       as M
 import qualified Data.PQueue.Min       as Q
-import           Test.Tasty
+import qualified Data.Sequence         as S
+
+import           Criterion.Main        as Crit
+import           Criterion.Types       as Crit
+import           Test.Tasty            as Test
 import           Test.Tasty.QuickCheck
 import           Text.Parsec           hiding (State)
 
@@ -27,14 +33,15 @@ import           Common
 -- solution
 
 day11_1 :: Solution
-day11_1 input = show $ findPathLength start end
+day11_1 input = show $ length $ findPathAStar start end
   where start = readInput input
         end   = newState [3,3,3,3,3,3,3,3,3,3,3,0,0,0,0]
 
 
 day11_2 :: Solution
-day11_2 _ = "not implemented yet"
-
+day11_2 input = show $ length $ findPathAStar start end
+  where start = readInput input
+        end   = newState [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]
 
 
 -- thing
@@ -148,37 +155,44 @@ getNextStates state = filter isOkay $ do
         items        = getItems currentFloor state
         isOkay s     = s /= state && isValid s
 
-heuristic :: State -> State -> Int
-heuristic s1 s2 = div (sum $ map abs $ on (zipWith (-)) toList s1 s2) 2
 
-findPath :: State -> State -> [State]
-findPath start end = findPath_ originalMap $ Q.fromList [(0,0,start)]
+
+-- pathfinding
+
+heuristic :: State -> State -> Int
+heuristic s1 s2 = div (1 + sum (map abs $ on (zipWith (-)) toList s1 s2)) 2
+
+findPathDijkstra :: State -> State -> [State]
+findPathDijkstra start end = findPath_ originalMap $ S.viewl $ S.fromList [start]
+  where originalMap = M.fromList [(start, start)]
+        construct s seen
+          | s == start = [start]
+          | otherwise  = s : construct (seen M.! s) seen
+        findPath_ _ S.EmptyL = error "findPathDijkstra: no path found"
+        findPath_ !seen !(current S.:< rest)
+          | end == current = reverse $ construct end seen
+          | otherwise = findPath_ newSeen $ S.viewl $ rest S.>< S.fromList nexts
+          where nexts = [ next
+                        | next <- getNextStates current
+                        , next `M.notMember` seen
+                        ]
+                newSeen = M.union seen $ M.fromList $ (,current) <$> nexts
+
+findPathAStar :: State -> State -> [State]
+findPathAStar start end = findPath_ originalMap $ Q.fromList [(0,0,start)]
   where originalMap = M.fromList [(start, (0,start))]
         construct s seen
           | s == start = [start]
           | otherwise  = s : construct (snd $ seen M.! s) seen
         findPath_ !seen !queue
           | end == current = reverse $ construct end seen
-          | otherwise      = findPath_ newSeen $ Q.union rest $ Q.fromList [(cost + 1 + heuristic end next, cost + 1, next) | next <- nexts]
+          | otherwise = findPath_ newSeen $ Q.union rest $ Q.fromList [(cost + 1 + heuristic end next, cost + 1, next) | next <- nexts]
           where ((_,cost,current), rest) = Q.deleteFindMin queue
-                nexts = nub [ next
-                            | next <- getNextStates current
-                            , maybe True (cost+1 <) $ fmap fst $ M.lookup next seen
-                            ]
+                nexts = [ next
+                        | next <- getNextStates current
+                        , maybe True (cost+1 <) $ fmap fst $ M.lookup next seen
+                        ]
                 newSeen = M.union (M.fromList [(next,(cost+1,current)) | next <- nexts]) seen
-
-findPathLength :: State -> State -> Int
-findPathLength start end = findPath_ originalMap $ Q.fromList [(0,0,start)]
-  where originalMap = M.fromList [(start, 0)]
-        findPath_ !seen !queue
-          | end == current = seen M.! end
-          | otherwise      = findPath_ newSeen $ Q.union rest $ Q.fromList [(cost + 1 + heuristic end next, cost + 1, next) | next <- nexts]
-          where ((_,cost,current), rest) = Q.deleteFindMin queue
-                nexts = nub [ next
-                            | next <- getNextStates current
-                            , maybe True (cost+1 <) $ M.lookup next seen
-                            ]
-                newSeen = M.union (M.fromList [(next,cost+1) | next <- nexts]) seen
 
 
 
@@ -212,7 +226,15 @@ checkItemsAndFloors = testProperty "getItems and getFloor are consistent" predic
   where predicate s (Floor f) = and [getFloor t s == f | t <- getItems f s]
 
 runTests :: IO ()
-runTests = defaultMain $ testGroup "Day11" tests
+runTests = Test.defaultMain $ testGroup "Day11" tests
   where tests = [ checkStateStability
                 , checkItemsAndFloors
                 ]
+
+benchmark :: IO ()
+benchmark = Crit.defaultMainWith conf [ bench "dijkstra" $ whnf (findPathDijkstra    start) end
+                                      , bench "astar"    $ whnf (findPathAStar       start) end
+                                      ]
+  where start = newState [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+        end   = newState [2,0,0,0,0,0,0,1,1,0,0,2,2,0,0]
+        conf  = defaultConfig { resamples = 100 }
