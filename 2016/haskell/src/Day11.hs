@@ -119,7 +119,7 @@ toList :: State -> [Int]
 toList state = [getFloor thing state | thing <- allThings]
 
 getFloor :: Thing -> State -> Int
-getFloor t (State n) = (shiftR n $ 2 * fromEnum t) .&. 3
+getFloor t (State n) = shiftR n (2 * fromEnum t) .&. 3
 
 getItems :: Int -> State -> [Thing]
 getItems f state = [ thing
