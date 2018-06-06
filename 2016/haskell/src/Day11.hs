@@ -1,4 +1,5 @@
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE BangPatterns  #-}
+{-# LANGUAGE TupleSections #-}
 
 
 
@@ -12,12 +13,12 @@ module Day11 (day11_1, day11_2,
 
 -- import
 
-import           Data.Function
 import           Data.List             as L
 import qualified Data.Map.Strict       as M
+import           Data.Sequence         as Z (ViewL (..), fromList, viewl, (><))
 import qualified Data.Set              as S
 import           Test.Tasty
-import           Test.Tasty.QuickCheck
+import           Test.Tasty.QuickCheck hiding ((><))
 import           Text.Parsec           hiding (State)
 
 import           Common
@@ -37,7 +38,7 @@ day11_2 _ = "not implemented yet"
 
 
 
---thing
+-- thing
 
 data Thing = Elevator
            | Chip1
@@ -88,7 +89,7 @@ newtype State = State Int
 
 newState :: [Int] -> State
 newState l
-  | L.length l == 11 && and [x >= 0 && x < 4 | x <- l] =
+  | length l == 11 && and [x >= 0 && x < 4 | x <- l] =
       State $ foldr1 (\v a -> 4 * a + v) l
   | otherwise = error "newState: wrong input"
 
@@ -133,7 +134,7 @@ getNextStates state = filter isOkay $ do
   transform <- [moveUp, moveDown]
   carried   <- [ sub
                | sub <- subsequences items
-               , L.length sub `elem` [1,2]
+               , length sub `elem` [1,2]
                ]
   return $ foldr ($) state $ map transform $ Elevator:carried
   where currentFloor = getFloor Elevator state
@@ -141,31 +142,30 @@ getNextStates state = filter isOkay $ do
         isOkay s     = s /= state && isValid s
 
 findPath :: State -> State -> [State]
-findPath start end = findPath_ originalMap [start]
+findPath start end = findPath_ originalMap $ viewl $ Z.fromList [start]
   where originalMap = M.fromList [(start, start)]
         construct s seen
           | s == start = [start]
           | otherwise  = s : construct (seen M.! s) seen
-        findPath_ !seen !current
-          | end `elem` current = reverse $ construct end seen
-          | otherwise          = findPath_ newSeen newCurrent
-          where nexts = nubBy ((==) `on` fst) [ (next, parent)
-                                              | parent <- current
-                                              , next   <- getNextStates parent
-                                              , next `M.notMember` seen
-                                              ]
-                newCurrent = map fst nexts
-                newSeen    = M.union seen $ M.fromList nexts
+        findPath_ _ EmptyL = error "findPath: no path found!"
+        findPath_ !seen !(current :< rest)
+          | end == current = reverse $ construct end seen
+          | otherwise      = findPath_ newSeen $ viewl $ rest >< Z.fromList nexts
+          where nexts = nub [ next
+                            | next <- getNextStates current
+                            , next `M.notMember` seen
+                            ]
+                newSeen = M.union seen $ M.fromList $ (,current) <$> nexts
 
 findPathLength :: State -> State -> Int
-findPathLength start end = findPath_ originalSet [start] 0
+findPathLength start end = findPath_ originalSet $ Z.viewl $ Z.fromList [(0,start)]
   where originalSet = S.fromList [start]
-        findPath_ !seen !current !stage
-          | end `elem` current = stage
-          | otherwise          = findPath_ newSeen nexts $ stage + 1
+        findPath_ _ EmptyL = error "findPath: no path found!"
+        findPath_ !seen !((stage,current) Z.:< rest)
+          | end == current = stage
+          | otherwise      = findPath_ newSeen $ Z.viewl $ rest Z.>< Z.fromList ((stage+1,) <$> nexts)
           where nexts = nub [ next
-                            | parent <- current
-                            , next   <- getNextStates parent
+                            | next <- getNextStates current
                             , next `S.notMember` seen
                             ]
                 newSeen = S.union seen $ S.fromList nexts
