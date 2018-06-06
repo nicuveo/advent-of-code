@@ -36,13 +36,9 @@ import           Common
 -- solution
 
 day11_1 :: Solution
-day11_1 _     = show $ length $ tail $ findPathAStar start end
-  where start = newState [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-        end   = newState [2,3,2,3,0,1,2,0,0,2,2,0,0,0,0]
-
--- day11_1 input = show $ length $ tail $ findPathAStar start end
---   where start = readInput input
---         end   = newState [3,3,3,3,3,3,3,3,3,3,3,0,0,0,0]
+day11_1 input = show $ length $ tail $ findPathAStar start end
+  where start = readInput input
+        end   = newState [3,3,3,3,3,3,3,3,3,3,3,0,0,0,0]
 
 
 day11_2 :: Solution
