@@ -24,7 +24,6 @@ import qualified Data.PQueue.Min             as Q
 import qualified Data.Sequence               as S
 
 import           Criterion.Main              as Crit
-import           Criterion.Types             as Crit
 import           Test.Tasty                  as Test
 import           Test.Tasty.QuickCheck       hiding ((.&.))
 import           Text.Parsec                 hiding (State)
@@ -238,9 +237,8 @@ runTests = Test.defaultMain $ testGroup "Day11" tests
                 ]
 
 benchmark :: IO ()
-benchmark = Crit.defaultMainWith conf [ bench "dijkstra" $ whnf (findPathDijkstra    start) end
-                                      , bench "astar"    $ whnf (findPathAStar       start) end
-                                      ]
+benchmark = Crit.defaultMain [ bench "dijkstra" $ whnf (findPathDijkstra    start) end
+                             , bench "astar"    $ whnf (findPathAStar       start) end
+                             ]
   where start = newState [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-        end   = newState [2,0,0,0,0,0,0,1,1,0,0,2,2,0,0]
-        conf  = defaultConfig { resamples = 100 }
+        end   = newState [2,0,0,2,1,0,0,0,0,0,0,0,0,2,1]
