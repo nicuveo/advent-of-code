@@ -14,6 +14,7 @@ module Day11 (day11_1,
 
 -- import
 
+import           Control.Monad
 import           Control.Parallel.Strategies
 import           Data.Bits
 import           Data.Function
@@ -151,13 +152,15 @@ isValid state = and $ do
                                ]
 
 getNextStates :: State -> [State]
-getNextStates state = filter isOkay $ do
-  transform <- [moveUp, moveDown]
-  carried   <- [ sub
-               | sub <- subsequences items
-               , length sub `elem` [1,2]
-               ]
-  return $ foldr ($) state $ map transform $ Elevator:carried
+getNextStates state =
+  withStrategy (parList rpar) $ do
+    carried <- subsequences items
+    let carriedCount = length carried
+    guard $ carriedCount == 1 || carriedCount == 2
+    transform <- [moveUp, moveDown]
+    let next = foldr ($) state $ transform <$> Elevator:carried
+    guard $ isOkay next
+    return next
   where currentFloor = getFloor Elevator state
         items        = getItems currentFloor state
         isOkay s     = s /= state && isValid s
@@ -195,10 +198,10 @@ findPathAStar start end = findPath_ originalMap $ Q.fromList [(0,0,start)]
           | end == current = reverse $ construct end seen
           | otherwise = findPath_ newSeen $ Q.union rest $ Q.fromList [(cost + 1 + heuristic end next, cost + 1, next) | next <- nexts]
           where ((_,cost,current), rest) = Q.deleteFindMin queue
-                nexts = withStrategy (parList rseq)  [ next
-                                                     | next <- getNextStates current
-                                                     , maybe True (cost+1 <) $ fmap fst $ M.lookup next seen
-                                                     ]
+                nexts = withStrategy (parList rseq) [ next
+                                                    | next <- getNextStates current
+                                                    , maybe True (cost+1 <) $ fmap fst $ M.lookup next seen
+                                                    ]
                 newSeen = M.union (M.fromList [(next,(cost+1,current)) | next <- nexts]) seen
 
 
