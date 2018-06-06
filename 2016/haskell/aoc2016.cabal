@@ -10,7 +10,7 @@ extra-source-files:  README.md
 executable aoc2016
   hs-source-dirs:      src
   main-is:             Main.hs
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -O2 -Wall
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N4 -O2 -Wall
                        -fno-warn-type-defaults
                        -fno-warn-unused-do-bind
                        -fwarn-tabs
@@ -21,4 +21,5 @@ executable aoc2016
                        Day19,Day20,Day21,Day22,Day23,Day24,Day25
   build-depends:       base >= 4.7 && < 5,
                        filepath,parsec,split,MissingH,safe,array,containers,
-                       tasty,tasty-hunit,tasty-quickcheck,pqueue,criterion
+                       tasty,tasty-hunit,tasty-quickcheck,pqueue,criterion,
+                       parallel

@@ -14,18 +14,19 @@ module Day11 (day11_1,
 
 -- import
 
+import           Control.Parallel.Strategies
 import           Data.Bits
 import           Data.Function
-import           Data.List             as L
-import qualified Data.Map.Strict       as M
-import qualified Data.PQueue.Min       as Q
-import qualified Data.Sequence         as S
+import           Data.List                   as L
+import qualified Data.Map.Strict             as M
+import qualified Data.PQueue.Min             as Q
+import qualified Data.Sequence               as S
 
-import           Criterion.Main        as Crit
-import           Criterion.Types       as Crit
-import           Test.Tasty            as Test
-import           Test.Tasty.QuickCheck hiding ((.&.))
-import           Text.Parsec           hiding (State)
+import           Criterion.Main              as Crit
+import           Criterion.Types             as Crit
+import           Test.Tasty                  as Test
+import           Test.Tasty.QuickCheck       hiding ((.&.))
+import           Text.Parsec                 hiding (State)
 
 import           Common
 
@@ -178,10 +179,10 @@ findPathDijkstra start end = findPath_ originalMap $ S.viewl $ S.fromList [start
         findPath_ !seen (current S.:< rest)
           | end == current = reverse $ construct end seen
           | otherwise = findPath_ newSeen $ S.viewl $ rest S.>< S.fromList nexts
-          where nexts = [ next
-                        | next <- getNextStates current
-                        , next `M.notMember` seen
-                        ]
+          where nexts = withStrategy (parList rseq) [ next
+                                                    | next <- getNextStates current
+                                                    , next `M.notMember` seen
+                                                    ]
                 newSeen = M.union seen $ M.fromList $ (,current) <$> nexts
 
 findPathAStar :: State -> State -> [State]
@@ -194,10 +195,10 @@ findPathAStar start end = findPath_ originalMap $ Q.fromList [(0,0,start)]
           | end == current = reverse $ construct end seen
           | otherwise = findPath_ newSeen $ Q.union rest $ Q.fromList [(cost + 1 + heuristic end next, cost + 1, next) | next <- nexts]
           where ((_,cost,current), rest) = Q.deleteFindMin queue
-                nexts = [ next
-                        | next <- getNextStates current
-                        , maybe True (cost+1 <) $ fmap fst $ M.lookup next seen
-                        ]
+                nexts = withStrategy (parList rseq)  [ next
+                                                     | next <- getNextStates current
+                                                     , maybe True (cost+1 <) $ fmap fst $ M.lookup next seen
+                                                     ]
                 newSeen = M.union (M.fromList [(next,(cost+1,current)) | next <- nexts]) seen
 
 
