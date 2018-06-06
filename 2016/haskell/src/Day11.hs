@@ -29,7 +29,7 @@ import           Common
 day11_1 :: Solution
 day11_1 input = show $ findPathLength start end
   where start = readInput input
-        end   = newState [3,3,3,3,3,3,3,3,3,3,3]
+        end   = newState [3,3,3,3,3,3,3,3,3,3,3,0,0,0,0]
 
 
 day11_2 :: Solution
@@ -50,6 +50,10 @@ data Thing = Elevator
            | Generator4
            | Chip5
            | Generator5
+           | Chip6
+           | Generator6
+           | Chip7
+           | Generator7
            deriving (Show, Eq, Ord, Enum, Bounded)
 
 allThings :: [Thing]
@@ -60,14 +64,18 @@ allChips = [Chip1,
             Chip2,
             Chip3,
             Chip4,
-            Chip5]
+            Chip5,
+            Chip6,
+            Chip7]
 
 allGenerators :: [Thing]
 allGenerators = [Generator1,
                  Generator2,
                  Generator3,
                  Generator4,
-                 Generator5]
+                 Generator5,
+                 Generator6,
+                 Generator7]
 
 getGenerator :: Thing -> Thing
 getGenerator chip
@@ -88,7 +96,7 @@ newtype State = State Int
 
 newState :: [Int] -> State
 newState l
-  | length l == 11 && and [x >= 0 && x < 4 | x <- l] =
+  | length l == 15 && and [x >= 0 && x < 4 | x <- l] =
       State $ foldr1 (\v a -> 4 * a + v) l
   | otherwise = error "newState: wrong input"
 
@@ -190,7 +198,7 @@ readInput = newState . parseWith line
 newtype Floor = Floor Int deriving (Show)
 
 instance Arbitrary State where
-  arbitrary = State <$> choose(0, 4 ^ 11 - 1)
+  arbitrary = State <$> choose(0, 4 ^ 15 - 1)
 
 instance Arbitrary Floor where
   arbitrary = Floor <$> choose(0, 3)
