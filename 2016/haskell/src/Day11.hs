@@ -138,7 +138,7 @@ moveDown thing state@(State n)
 -- graph
 
 isValid :: State -> Bool
-isValid state = and $ do
+isValid state = and $ withStrategy (parList rseq) $ do
   chip <- allChips
   let chipFloor = getFloor chip state
   return $ getFloor (getGenerator chip) state == chipFloor ||
