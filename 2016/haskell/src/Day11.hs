@@ -14,6 +14,7 @@ module Day11 (day11_1,
 
 -- import
 
+import           Data.Bits
 import           Data.Function
 import           Data.List             as L
 import qualified Data.Map.Strict       as M
@@ -23,7 +24,7 @@ import qualified Data.Sequence         as S
 import           Criterion.Main        as Crit
 import           Criterion.Types       as Crit
 import           Test.Tasty            as Test
-import           Test.Tasty.QuickCheck
+import           Test.Tasty.QuickCheck hiding ((.&.))
 import           Text.Parsec           hiding (State)
 
 import           Common
@@ -117,8 +118,7 @@ toList :: State -> [Int]
 toList state = [getFloor thing state | thing <- allThings]
 
 getFloor :: Thing -> State -> Int
-getFloor t (State n) = mod (div n $ 4 ^ index) 4
-  where index = fromEnum t
+getFloor t (State n) = (shiftR n $ 2 * fromEnum t) .&. 3
 
 getItems :: Int -> State -> [Thing]
 getItems f state = [ thing
