@@ -70,6 +70,9 @@ data Thing = Elevator
 allThings :: [Thing]
 allThings = [minBound .. maxBound]
 
+allItems :: [Thing]
+allItems = [succ minBound .. maxBound]
+
 
 
 -- state
@@ -91,7 +94,7 @@ getFloor t (State n) = shiftR n (2 * fromEnum t) .&. 3
 
 getItems :: Int -> State -> [Thing]
 getItems f state = [ thing
-                   | thing <- delete Elevator allThings
+                   | thing <- allItems
                    , getFloor thing state == f
                    ]
 
