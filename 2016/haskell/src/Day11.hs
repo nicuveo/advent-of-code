@@ -70,34 +70,6 @@ data Thing = Elevator
 allThings :: [Thing]
 allThings = [minBound .. maxBound]
 
-allChips :: [Thing]
-allChips = [Chip1,
-            Chip2,
-            Chip3,
-            Chip4,
-            Chip5,
-            Chip6,
-            Chip7]
-
-allGenerators :: [Thing]
-allGenerators = [Generator1,
-                 Generator2,
-                 Generator3,
-                 Generator4,
-                 Generator5,
-                 Generator6,
-                 Generator7]
-
-getGenerator :: Thing -> Thing
-getGenerator chip
-  | chip `elem` allChips = succ chip
-  | otherwise            = error "getGenerator: not a chip"
-
-getOtherGenerators :: Thing -> [Thing]
-getOtherGenerators chip
-  | chip `elem` allChips = delete (getGenerator chip) allGenerators
-  | otherwise            = error "getGenerator: not a chip"
-
 
 
 -- state
@@ -138,13 +110,27 @@ moveDown thing state@(State n)
 -- graph
 
 isValid :: State -> Bool
-isValid state = and $ withStrategy (parList rseq) $ do
-  chip <- allChips
-  let chipFloor = getFloor chip state
-  return $ getFloor (getGenerator chip) state == chipFloor ||
-           chipFloor `notElem` [ getFloor gen state
-                               | gen <- getOtherGenerators chip
-                               ]
+isValid state = (c1==g1 || c1/=g2 && c1/=g3 && c1/=g4 && c1/=g5 && c1/=g6 && c1/=g7) &&
+                (c2==g2 || c2/=g1 && c2/=g3 && c2/=g4 && c2/=g5 && c2/=g6 && c2/=g7) &&
+                (c3==g3 || c3/=g1 && c3/=g2 && c3/=g4 && c3/=g5 && c3/=g6 && c3/=g7) &&
+                (c4==g4 || c4/=g1 && c4/=g2 && c4/=g3 && c4/=g5 && c4/=g6 && c4/=g7) &&
+                (c5==g5 || c5/=g1 && c5/=g2 && c5/=g3 && c5/=g4 && c5/=g6 && c5/=g7) &&
+                (c6==g6 || c6/=g1 && c6/=g2 && c6/=g3 && c6/=g4 && c6/=g5 && c6/=g7) &&
+                (c7==g7 || c7/=g1 && c7/=g2 && c7/=g3 && c7/=g4 && c7/=g5 && c7/=g6)
+  where c1 = getFloor Chip1      state
+        g1 = getFloor Generator1 state
+        c2 = getFloor Chip2      state
+        g2 = getFloor Generator2 state
+        c3 = getFloor Chip3      state
+        g3 = getFloor Generator3 state
+        c4 = getFloor Chip4      state
+        g4 = getFloor Generator4 state
+        c5 = getFloor Chip5      state
+        g5 = getFloor Generator5 state
+        c6 = getFloor Chip6      state
+        g6 = getFloor Generator6 state
+        c7 = getFloor Chip7      state
+        g7 = getFloor Generator7 state
 
 getNextStates :: State -> [State]
 getNextStates state =
