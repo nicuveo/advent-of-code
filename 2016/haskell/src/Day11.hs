@@ -41,10 +41,10 @@ day11_1 input = show $ length $ tail $ findPathAStar start end
 
 
 day11_2 :: Solution
-day11_2 input = show $ length $ tail $ findPathAStar start end
+day11_2 input = unlines $ (show $ length $ tail path) : map (show . toList) path
   where start = readInput input
-        end   = start
-        --end = newState [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]
+        end   = newState [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]
+        path  = findPathAStar start end
 
 
 
