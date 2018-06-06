@@ -33,15 +33,21 @@ import           Common
 -- solution
 
 day11_1 :: Solution
-day11_1 input = show $ length $ findPathAStar start end
-  where start = readInput input
-        end   = newState [3,3,3,3,3,3,3,3,3,3,3,0,0,0,0]
+day11_1 _     = show $ length $ tail $ findPathAStar start end
+  where start = newState [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+        end   = newState [2,3,2,3,0,1,2,0,0,2,2,0,0,0,0]
+
+-- day11_1 input = show $ length $ tail $ findPathAStar start end
+--   where start = readInput input
+--         end   = newState [3,3,3,3,3,3,3,3,3,3,3,0,0,0,0]
 
 
 day11_2 :: Solution
-day11_2 input = show $ length $ findPathAStar start end
+day11_2 input = show $ length $ tail $ findPathAStar start end
   where start = readInput input
-        end   = newState [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]
+        end   = start
+        --end = newState [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]
+
 
 
 -- thing
@@ -169,7 +175,7 @@ findPathDijkstra start end = findPath_ originalMap $ S.viewl $ S.fromList [start
           | s == start = [start]
           | otherwise  = s : construct (seen M.! s) seen
         findPath_ _ S.EmptyL = error "findPathDijkstra: no path found"
-        findPath_ !seen !(current S.:< rest)
+        findPath_ !seen (current S.:< rest)
           | end == current = reverse $ construct end seen
           | otherwise = findPath_ newSeen $ S.viewl $ rest S.>< S.fromList nexts
           where nexts = [ next
