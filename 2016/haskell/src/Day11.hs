@@ -1,5 +1,4 @@
-{-# LANGUAGE BangPatterns  #-}
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE BangPatterns #-}
 
 
 
@@ -13,12 +12,12 @@ module Day11 (day11_1, day11_2,
 
 -- import
 
+import           Data.Function
 import           Data.List             as L
 import qualified Data.Map.Strict       as M
-import           Data.Sequence         as Z (ViewL (..), fromList, viewl, (><))
-import qualified Data.Set              as S
+import qualified Data.PQueue.Min       as Q
 import           Test.Tasty
-import           Test.Tasty.QuickCheck hiding ((><))
+import           Test.Tasty.QuickCheck
 import           Text.Parsec           hiding (State)
 
 import           Common
@@ -141,34 +140,37 @@ getNextStates state = filter isOkay $ do
         items        = getItems currentFloor state
         isOkay s     = s /= state && isValid s
 
+heuristic :: State -> State -> Int
+heuristic s1 s2 = div (sum $ map abs $ on (zipWith (-)) toList s1 s2) 2
+
 findPath :: State -> State -> [State]
-findPath start end = findPath_ originalMap $ viewl $ Z.fromList [start]
-  where originalMap = M.fromList [(start, start)]
+findPath start end = findPath_ originalMap $ Q.fromList [(0,0,start)]
+  where originalMap = M.fromList [(start, (0,start))]
         construct s seen
           | s == start = [start]
-          | otherwise  = s : construct (seen M.! s) seen
-        findPath_ _ EmptyL = error "findPath: no path found!"
-        findPath_ !seen !(current :< rest)
+          | otherwise  = s : construct (snd $ seen M.! s) seen
+        findPath_ !seen !queue
           | end == current = reverse $ construct end seen
-          | otherwise      = findPath_ newSeen $ viewl $ rest >< Z.fromList nexts
-          where nexts = nub [ next
+          | otherwise      = findPath_ newSeen $ Q.union rest $ Q.fromList [(cost + 1 + heuristic end next, cost + 1, next) | next <- nexts]
+          where ((_,cost,current), rest) = Q.deleteFindMin queue
+                nexts = nub [ next
                             | next <- getNextStates current
-                            , next `M.notMember` seen
+                            , maybe True (cost+1 <) $ fmap fst $ M.lookup next seen
                             ]
-                newSeen = M.union seen $ M.fromList $ (,current) <$> nexts
+                newSeen = M.union (M.fromList [(next,(cost+1,current)) | next <- nexts]) seen
 
 findPathLength :: State -> State -> Int
-findPathLength start end = findPath_ originalSet $ Z.viewl $ Z.fromList [(0,start)]
-  where originalSet = S.fromList [start]
-        findPath_ _ EmptyL = error "findPath: no path found!"
-        findPath_ !seen !((stage,current) Z.:< rest)
-          | end == current = stage
-          | otherwise      = findPath_ newSeen $ Z.viewl $ rest Z.>< Z.fromList ((stage+1,) <$> nexts)
-          where nexts = nub [ next
+findPathLength start end = findPath_ originalMap $ Q.fromList [(0,0,start)]
+  where originalMap = M.fromList [(start, 0)]
+        findPath_ !seen !queue
+          | end == current = seen M.! end
+          | otherwise      = findPath_ newSeen $ Q.union rest $ Q.fromList [(cost + 1 + heuristic end next, cost + 1, next) | next <- nexts]
+          where ((_,cost,current), rest) = Q.deleteFindMin queue
+                nexts = nub [ next
                             | next <- getNextStates current
-                            , next `S.notMember` seen
+                            , maybe True (cost+1 <) $ M.lookup next seen
                             ]
-                newSeen = S.union seen $ S.fromList nexts
+                newSeen = M.union (M.fromList [(next,cost+1) | next <- nexts]) seen
 
 
 

@@ -21,4 +21,4 @@ executable aoc2016
                        Day19,Day20,Day21,Day22,Day23,Day24,Day25
   build-depends:       base >= 4.7 && < 5,
                        filepath,parsec,split,MissingH,safe,array,containers,
-                       tasty,tasty-hunit,tasty-quickcheck
+                       tasty,tasty-hunit,tasty-quickcheck,pqueue
