@@ -25,6 +25,7 @@ import qualified Data.Sequence               as S
 
 import           Criterion.Main              as Crit
 import           Test.Tasty                  as Test
+import           Test.Tasty.HUnit            as Test
 import           Test.Tasty.QuickCheck       hiding ((.&.))
 import           Text.Parsec                 hiding (State)
 
@@ -200,29 +201,68 @@ readInput = newState . parseWith line
 
 -- tests
 
--- testGroup [...] :: TestTree
--- testCase     "label" $ expected @=? actual
-
-newtype Floor = Floor Int deriving (Show)
-
-instance Arbitrary State where
-  arbitrary = State <$> choose(0, 4 ^ 15 - 1)
+newtype Floor = Floor { getF :: Int } deriving (Show, Eq)
+newtype FloorList = FloorList { getFL :: [Int] } deriving (Show, Eq)
 
 instance Arbitrary Floor where
   arbitrary = Floor <$> choose(0, 3)
 
+instance Arbitrary FloorList where
+  arbitrary = FloorList . map getF <$> vectorOf 15 arbitrary
+
+instance Arbitrary State where
+  arbitrary = State <$> choose(0, 4 ^ 15 - 1)
+
+
+checkThings :: TestTree
+checkThings = testGroup "things"
+  [ testCase "elevator is not an item" $ [Elevator] @=? allThings \\ allItems
+  ]
+
 checkStateStability :: TestTree
-checkStateStability = testProperty "state is stable" predicate
-  where predicate s = newState (toList s) == s
+checkStateStability = testGroup "stability of state"
+  [ testProperty "state -> list  -> state" $ \s -> newState (toList s) == s
+  , testProperty "list  -> state -> list"  $ \l -> toList (newState $ getFL l) == getFL l
+  ]
 
 checkItemsAndFloors :: TestTree
 checkItemsAndFloors = testProperty "getItems and getFloor are consistent" predicate
   where predicate s (Floor f) = and [getFloor t s == f | t <- getItems f s]
 
+checkIsValid :: TestTree
+checkIsValid = testGroup "isValid test cases"
+  [ testCase "all on same floor"    $ assertTrue  $ isValid $ newState [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+  , testCase "chips all separated"  $ assertTrue  $ isValid $ newState [0,1,0,2,0,3,0,1,0,2,0,3,0,1,0]
+  , testCase "chip with wrong gen"  $ assertFalse $ isValid $ newState [0,2,1,1,0,0,0,0,0,0,0,0,0,0,0]
+  , testCase "chip with wrong gens" $ assertFalse $ isValid $ newState [0,1,2,0,1,0,1,0,1,0,1,0,1,0,1]
+  ]
+  where assertTrue  = assertBool ""
+        assertFalse = assertTrue . not
+
+checkNextStates :: TestTree
+checkNextStates = testGroup "getNextStates"
+  [ testProperty "no duplicates"       $ \s -> let n = getNextStates s in n == nub n
+  , testProperty "all valid"           $ \s -> all isValid $ getNextStates s
+  , testProperty "all within one move" $ \s -> all (\n -> distance s n `elem` [2,3]) $ getNextStates s
+  , testCase     "sample test case"    $ getNextStates (newState [1,1,1, 3,3,3,3,3,3,3,3,3,3,3,3])
+                                                  @?= [ newState [2,2,1, 3,3,3,3,3,3,3,3,3,3,3,3]
+                                                      , newState [0,0,1, 3,3,3,3,3,3,3,3,3,3,3,3]
+                                                      , newState [2,1,2, 3,3,3,3,3,3,3,3,3,3,3,3]
+                                                      , newState [0,1,0, 3,3,3,3,3,3,3,3,3,3,3,3]
+                                                      , newState [2,2,2, 3,3,3,3,3,3,3,3,3,3,3,3]
+                                                      , newState [0,0,0, 3,3,3,3,3,3,3,3,3,3,3,3]
+                                                      ]
+  ]
+  where distance = sum  ... on (map abs ... zipWith(-)) toList
+
+
 runTests :: IO ()
 runTests = Test.defaultMain $ testGroup "Day11" tests
-  where tests = [ checkStateStability
+  where tests = [ checkThings
+                , checkStateStability
                 , checkItemsAndFloors
+                , checkIsValid
+                , checkNextStates
                 ]
 
 benchmark :: IO ()
