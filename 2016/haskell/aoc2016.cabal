@@ -22,4 +22,4 @@ executable aoc2016
   build-depends:       base >= 4.7 && < 5,
                        filepath,parsec,split,MissingH,safe,array,containers,
                        tasty,tasty-hunit,tasty-quickcheck,pqueue,criterion,
-                       parallel,vector
+                       parallel,vector,mtl
