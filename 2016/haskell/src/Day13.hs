@@ -4,7 +4,8 @@
 
 -- module
 
-module Day13 (day13_1, day13_2, printMaze) where
+module Day13 (day13_1, day13_2,
+              printMaze, printPath, printPathColor) where
 
 
 
@@ -132,10 +133,28 @@ findPath start end = findPath_ originalMap originalQueue
 -- debug
 
 printMaze :: Int -> Int -> String
-printMaze size salt = unlines [ [ if layout salt (x,y)
-                                  then ' '
-                                  else '#'
-                                | x <- [0 .. size - 1]
-                                ]
-                              | y <- [0 .. size - 1]
-                              ]
+printMaze size salt =
+  unlines [ [ if layout salt (x,y)
+              then ' '
+              else '#'
+            | x <- [0 .. size - 1]
+            ]
+          | y <- [0 .. size - 1]
+          ]
+
+printPath :: Int -> Int -> [Point] -> String
+printPath size salt path =
+  unlines [ [ if (x,y) `elem` path
+              then 'X'
+              else if layout salt (x,y)
+                   then ' '
+                   else '#'
+            | x <- [0 .. size - 1]
+            ]
+          | y <- [0 .. size - 1]
+          ]
+
+printPathColor :: Int -> Int -> [Point] -> String
+printPathColor size salt path = colorize =<< printPath size salt path
+  where colorize 'X' = "\x1b[34;1mX\x1b[0;0m"
+        colorize x   = return x
