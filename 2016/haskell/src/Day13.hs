@@ -69,7 +69,7 @@ isEmpty point = do
   val <- do
     let v = layout (envSalt env) point
     put $ Env (envSalt env) $ M.insert key v $ envMaze env
-    return $ v
+    return v
   return $ fromMaybe val $ M.lookup key $ envMaze env
   where key = pointToKey point
 
