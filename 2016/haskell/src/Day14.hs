@@ -10,9 +10,6 @@ module Day14 (day14_1, day14_2) where
 
 -- import
 
-import           Crypto.Hash.MD5        (hash)
-import           Data.ByteString.Base16 (encode)
-import           Data.ByteString.Char8  (pack, unpack)
 import           Data.List
 
 import           Common
@@ -35,9 +32,7 @@ day14_2 salt = show $ findKeys 2017 salt !! 63
 type Salt = String
 
 md5 :: Int -> Salt -> Int -> String
-md5 count salt index = unpack $ foldl' step first [1..count]
-  where step accum _ = encode $ hash accum
-        first        = pack $ salt ++ show index
+md5 count salt index = hashMD5s count $ salt ++ show index
 
 
 
