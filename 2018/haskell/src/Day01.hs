@@ -8,6 +8,7 @@ module Day01 (day01_1, day01_2) where
 
 import           Common
 import           Data.List
+import qualified Data.Set    as S
 import           Text.Parsec
 
 
@@ -19,12 +20,12 @@ day01_1 = show . sum . parseInput
 
 
 day01_2 :: Solution
-day01_2 input = show $ findFirstDuplicate [] frequencies
+day01_2 input = show $ findFirstDuplicate S.empty frequencies
   where changes     = parseInput input
         frequencies = scanl (+) 0 $ cycle changes
         findFirstDuplicate history (f : fs)
-          | f `elem` history = f
-          | otherwise        = findFirstDuplicate (f : history) fs
+          | f `S.member` history = f
+          | otherwise        = findFirstDuplicate (S.insert f history) fs
         findFirstDuplicate _ [] = error "not reachable"
 
 -- day01_2 input = show $ take 10 $ sort [ (i, div (a - b) delta, a)
