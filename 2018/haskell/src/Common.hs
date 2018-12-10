@@ -66,6 +66,9 @@ minimumOn = minimumBy . on compare
 maximumOn :: Ord b => (a -> b) -> [a] -> a
 maximumOn = maximumBy . on compare
 
+groupOn :: Ord b => (a -> b) -> [a] -> [[a]]
+groupOn = groupBy . on (==)
+
 
 
 -- md5
