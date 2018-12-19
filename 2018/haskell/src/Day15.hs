@@ -30,7 +30,7 @@ import           Common
 
 day15_1 :: Solution
 day15_1 input = show $ lastFullRound * remainingHealth
-  where (gs, gl) = runGame testData
+  where (gs, gl) = runGame input
         lastFullRound = L.last [r | TurnEnded r <- gl]
         remainingHealth = L.sum $ entityHP <$> gameEntities gs
 
@@ -40,6 +40,13 @@ day15_2 = undefined
 
 
 testData :: String
+testData = "######\n\
+           \#.G..#\n\
+           \##..##\n\
+           \#...E#\n\
+           \#E...#\n\
+           \######\n"
+{-
 testData = "#########\n\
            \#G......#\n\
            \#.E.#...#\n\
@@ -50,54 +57,12 @@ testData = "#########\n\
            \#.....G.#\n\
            \#########\n"
 
-
-{-
-
-testData = "################################\n\
-           \#####################...########\n\
-           \###################....G########\n\
-           \###################....#########\n\
-           \#######.##########......########\n\
-           \#######G#########........#######\n\
-           \#######G#######.G.........######\n\
-           \#######.######..G.........######\n\
-           \#######.......##.G...G.G..######\n\
-           \########..##..#....G......G#####\n\
-           \############...#.....G.....#####\n\
-           \#...#######..........G.#...#####\n\
-           \#...#######...#####G......######\n\
-           \##...######..#######G.....#.##.#\n\
-           \###.G.#####.#########G.........#\n\
-           \###G..#####.#########.......#.E#\n\
-           \###..######.#########..........#\n\
-           \###.......#.#########.....E..E.#\n\
-           \#####G...#..#########.......#..#\n\
-           \####.G.#.#...#######.....G.....#\n\
-           \########......#####...........##\n\
-           \###########..................###\n\
-           \##########.................#####\n\
-           \##########.................#####\n\
-           \############..E.........E.....##\n\
-           \############.........E........##\n\
-           \###############.#............E##\n\
-           \##################...E..E..##.##\n\
-           \####################.#E..####.##\n\
-           \################.....######...##\n\
-           \#################.#..###########\n\
-           \################################\n"
-
-
-
-
-
-
 testData = "######\n\
            \#.G..#\n\
            \##..##\n\
            \#...E#\n\
            \#E...#\n\
            \######\n"
-
 
 testData = "#######\n\
            \#E..EG#\n\
@@ -122,18 +87,6 @@ testData = "#######\n\
            \#..G#E#\n\
            \#.....#\n\
            \#######\n"
-
-
-
-           "#########\n\
-           \#G..G..G#\n\
-           \#.......#\n\
-           \#.......#\n\
-           \#G..E..G#\n\
-           \#.......#\n\
-           \#.......#\n\
-           \#G..G..G#\n\
-           \#########\n"
 -}
 
 
@@ -220,13 +173,6 @@ neighbours :: Position -> GameMonad s [Position]
 neighbours x = do
   mapWidth <- asks gameWidth
   return [x - mapWidth, x - 1, x + 1, x + mapWidth]
-
-manhattanDistance :: Position -> Position -> GameMonad s Int
-manhattanDistance p1 p2 = do
-  w <- asks gameWidth
-  let (y1, x1) = p1 `divMod` w
-      (y2, x2) = p2 `divMod` w
-  return $ abs (y1 - y2) + abs (x1 - x2)
 
 
 
@@ -338,31 +284,37 @@ createDistanceMap entity enemies = do
   theMap      <- asks gameMap
   distanceMap <- unsafeNew $ V.length theMap
   set distanceMap 9999
-  queue       <- fmap (L.map snd . L.take 1 . sort . L.concat) $ forM enemies $ \e -> do
+  fillMap distanceMap 0 0 [entityPosition entity]
+  queue       <- fmap (sort . L.concat) $ forM enemies $ \e -> do
     allNeighbours  <- neighbours $ entityPosition e
     goodNeighbours <- forM allNeighbours $ \n -> do
-      walkable <- isWalkable n
-      d        <- manhattanDistance (entityPosition entity) n
-      return $ if walkable || d == 0
-               then Just (d, n)
+      distance <- V.read distanceMap n
+      return $ if distance < 9999
+               then Just (distance, n)
                else Nothing
     return $ catMaybes goodNeighbours
-  fillMap distanceMap 0 queue
+  set distanceMap 9999
+  unless (L.null queue) $ do
+    let (_, target) = L.head queue
+    fillMap distanceMap (entityPosition entity) 0 [target]
   return distanceMap
-  where fillMap :: DistanceMap s -> Int -> [Position] -> GameMonad s ()
-        fillMap _  _ [] = return ()
-        fillMap dm d q  = do
-          nextQueue <- forM q $ \p -> do
-            write dm p d
-            allNeighbours  <- neighbours p
-            goodNeighbours <- forM allNeighbours $ \n -> do
-              walkable <- isWalkable n
-              distance <- V.read dm n
-              return $ if walkable && distance > d + 1
-                       then Just n
-                       else Nothing
-            return $ catMaybes goodNeighbours
-          fillMap dm (d+1) $ nub $ L.concat nextQueue
+
+fillMap :: DistanceMap s -> Position -> Int -> [Position] -> GameMonad s ()
+fillMap _       _      _               []    = return ()
+fillMap distMap target currentDistance queue
+  | target `L.elem` queue = write distMap target currentDistance
+  | otherwise             = do
+      nextQueue <- forM queue $ \p -> do
+        write distMap p currentDistance
+        allNeighbours  <- neighbours p
+        goodNeighbours <- forM allNeighbours $ \n -> do
+          walkable <- isWalkable n
+          distance <- V.read distMap n
+          return $ if (n == target || walkable) && distance > currentDistance + 1
+                   then Just n
+                   else Nothing
+        return $ catMaybes goodNeighbours
+      fillMap distMap target (currentDistance+1) $ nub $ L.concat nextQueue
 
 
 
