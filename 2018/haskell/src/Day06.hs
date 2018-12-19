@@ -20,10 +20,7 @@ import           Common
 day06_1 :: Solution
 day06_1 input = show $ snd $ head validPoints
   where allPoints = parseInput input
-        xMin = minimum $ snd <$> allPoints
-        xMax = maximum $ snd <$> allPoints
-        yMin = minimum $ fst <$> allPoints
-        yMax = maximum $ fst <$> allPoints
+        (xMin, xMax, yMin, yMax) = extractBounds allPoints
         attributedPoints =
           [ (findPointClosestTo (y,x) allPoints, (y,x))
           | y <- [yMin .. yMax]
@@ -40,10 +37,7 @@ day06_1 input = show $ snd $ head validPoints
 day06_2 :: Solution
 day06_2 input = show regionSize
   where allPoints = parseInput input
-        xMin = minimum $ snd <$> allPoints
-        xMax = maximum $ snd <$> allPoints
-        yMin = minimum $ fst <$> allPoints
-        yMax = maximum $ fst <$> allPoints
+        (xMin, xMax, yMin, yMax) = extractBounds allPoints
         regionSize = countTrue
           [ sum (distanceFrom (y,x) <$> allPoints) < 10000
           | y <- [yMin .. yMax]
@@ -53,6 +47,14 @@ day06_2 input = show regionSize
 
 
 -- helpers
+
+extractBounds :: [Point] -> (Int, Int, Int, Int)
+extractBounds points = (xMin, xMax, yMin, yMax)
+  where xMin = minimum $ snd <$> points
+        xMax = maximum $ snd <$> points
+        yMin = minimum $ fst <$> points
+        yMax = maximum $ fst <$> points
+
 
 display :: Int -> Int -> [Point] -> [(Maybe Point, Point)] -> String
 display xMin xMax allPoints ps =
