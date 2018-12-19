@@ -213,6 +213,9 @@ modifyEntity oldEntity newEntity = do
         Just e  -> M.insert (entityPosition e) e entities'
   put $ gameState { gameEntities = newEntities }
 
+updateEntity :: Entity -> GameMonad s ()
+updateEntity e = modifyEntity e $ Just e
+
 countElves :: Entities -> Int
 countElves = M.size . M.filter (\e -> entityKind e == Elf)
 
@@ -258,49 +261,63 @@ entityTurn entityAtBeginningOfTurn = do
                 doAttack newEntity                                   -- try to attack
                 return True
 
+
+actionMoveEntity :: Entity -> Position -> GameMonad s Entity
+actionMoveEntity entity newPos = do
+  let oldPos = entityPosition entity
+  c <- atPos newPos
+  when (c /= '.') $ error "trying to move to an unreachable cell"
+  let newEntity = entity { entityPosition = newPos }
+  tell [EntityMove entity newEntity]
+  modifyEntity entity $ Just newEntity
+  theMap <- asks gameMap
+  V.swap theMap oldPos newPos
+  return newEntity
+
+actionKillEntity :: Entity -> GameMonad s ()
+actionKillEntity entity = do
+  tell [EntityDeath entity]
+  modifyEntity entity Nothing
+  theMap <- asks gameMap
+  V.write theMap (entityPosition entity) '.'
+
+
 doMove :: Entity -> DistanceMap s -> GameMonad s Entity
 doMove entity dm = do
   let oldPos = entityPosition entity
   currentDistance <- V.read dm oldPos
   neighbs         <- neighbours oldPos
+  -- rank all neighbouring cells
   scores          <- fmap (sort . catMaybes) $ forM neighbs $ \n -> do
     neighbDistance <- V.read dm n
     return $ if neighbDistance < currentDistance
              then Just (neighbDistance, n)
              else Nothing
+  -- if one is better than the current one: do move!
   if L.null scores || currentDistance == 0
     then return entity
     else do
       let (_, newPos) = L.head scores
-      c <- atPos newPos
-      when (c /= '.') $ error "trying to move to an unreachable cell"
-      let newEntity = entity { entityPosition = newPos }
-      tell [EntityMove entity newEntity]
-      modifyEntity entity $ Just newEntity
-      theMap <- asks gameMap
-      V.swap theMap oldPos newPos
-      return newEntity
+      actionMoveEntity entity newPos
 
 doAttack :: Entity -> GameMonad s ()
 doAttack entity = do
   let pos = entityPosition entity
   neighbs <- neighbours pos
+  -- rank all neighbouring enemies (if neighbouring entities are enemies)
   scores  <- fmap (sortOn entityHP . catMaybes) $ forM neighbs $ \n -> do
     maybeOtherEntity <- entityAtPosition n
     return $ maybeOtherEntity >>= \otherEntity ->
       if otherEntity `enemyOf` entity
       then Just $ damage (entityAttack entity) otherEntity
       else Nothing
+  -- if I have a nearby enemy, attack it!
   unless (L.null scores) $ do
     let damagedEnemy = L.head scores
     tell [EntityAttack entity damagedEnemy]
     if isDead damagedEnemy
-      then do
-        tell [EntityDeath damagedEnemy]
-        modifyEntity damagedEnemy Nothing
-        theMap <- asks gameMap
-        V.write theMap (entityPosition damagedEnemy) '.'
-      else modifyEntity damagedEnemy $ Just damagedEnemy
+      then actionKillEntity damagedEnemy
+      else updateEntity damagedEnemy
 
 
 
@@ -310,8 +327,10 @@ createDistanceMap :: Entity -> [Entity] -> GameMonad s (DistanceMap s)
 createDistanceMap entity enemies = do
   theMap      <- asks gameMap
   distanceMap <- unsafeNew $ V.length theMap
+  -- create distance map fronm my entity to all reachable cells
   set distanceMap 9999
   fillMap distanceMap 0 0 [entityPosition entity]
+  -- sort targets (neighbours of enemies) by distance from entity
   queue       <- fmap (sort . L.concat) $ forM enemies $ \e -> do
     allNeighbours  <- neighbours $ entityPosition e
     goodNeighbours <- forM allNeighbours $ \n -> do
@@ -320,6 +339,7 @@ createDistanceMap entity enemies = do
                then Just (distance, n)
                else Nothing
     return $ catMaybes goodNeighbours
+  -- find shortest path from target to entity (if there's a target)
   set distanceMap 9999
   unless (L.null queue) $ do
     let (_, target) = L.head queue
@@ -327,21 +347,21 @@ createDistanceMap entity enemies = do
   return distanceMap
 
 fillMap :: DistanceMap s -> Position -> Int -> [Position] -> GameMonad s ()
-fillMap _       _      _               []    = return ()
+fillMap _       _      _               []    = return ()                           -- no element left to process: no path towards the target
 fillMap distMap target currentDistance queue
-  | target `L.elem` queue = write distMap target currentDistance
+  | target `L.elem` queue = write distMap target currentDistance                   -- target in the queue? we found a path, stopping now
   | otherwise             = do
-      nextQueue <- forM queue $ \p -> do
-        write distMap p currentDistance
-        allNeighbours  <- neighbours p
-        goodNeighbours <- forM allNeighbours $ \n -> do
-          walkable <- isWalkable n
-          distance <- V.read distMap n
-          return $ if (n == target || walkable) && distance > currentDistance + 1
-                   then Just n
+      nextQueue <- forM queue $ \p -> do                                           -- for each cell at `currentDistance` from my starting point
+        write distMap p currentDistance                                            -- write that value in the distance map
+        allNeighbours  <- neighbours p                                             -- get all the neighbours
+        goodNeighbours <- forM allNeighbours $ \n -> do                            -- filter neighbours
+          walkable <- isWalkable n                                                 -- is this an allowed cell?
+          distance <- V.read distMap n                                             -- what distance has been found for it so far?
+          return $ if (n == target || walkable) && distance > currentDistance + 1  -- if it's worth choosing it as the next target
+                   then Just n                                                     -- then yeah let's keep it!
                    else Nothing
         return $ catMaybes goodNeighbours
-      fillMap distMap target (currentDistance+1) $ nub $ L.concat nextQueue
+      fillMap distMap target (currentDistance+1) $ nub $ L.concat nextQueue        -- recursive call with our new input queue
 
 
 
