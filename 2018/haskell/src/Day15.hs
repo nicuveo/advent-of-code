@@ -30,22 +30,38 @@ import           Common
 
 day15_1 :: Solution
 day15_1 input = show $ lastFullRound * remainingHealth
-  where (gs, gl) = runGame input
+  where (gs, gl) = runGame 3 input
         lastFullRound = L.last [r | TurnEnded r <- gl]
         remainingHealth = L.sum $ entityHP <$> gameEntities gs
 
 
 day15_2 :: Solution
-day15_2 = undefined
+day15_2 s = findResult 3
+  where input = s
+        (_, entities, _) = parseGamePure 3 input
+        elfNumber        = countElves entities
+        findResult elfa  =
+          let (gs, gl) = runGame elfa input
+              lastFullRound   = L.last [r | TurnEnded r <- gl]
+              remainingHealth = L.sum $ entityHP <$> gameEntities gs
+              remainingElves  = countElves $ gameEntities gs
+          in if remainingElves == elfNumber
+             then show (lastFullRound * remainingHealth) ++ ", " ++ show elfa
+             else findResult $ elfa + 1
 
 
 testData :: String
-testData = "######\n\
-           \#.G..#\n\
-           \##..##\n\
-           \#...E#\n\
-           \#E...#\n\
-           \######\n"
+testData = "#########\n\
+           \#G......#\n\
+           \#.E.#...#\n\
+           \#..##..G#\n\
+           \#...##..#\n\
+           \#...#...#\n\
+           \#.G...G.#\n\
+           \#.....G.#\n\
+           \#########\n"
+
+
 {-
 testData = "#########\n\
            \#G......#\n\
@@ -108,14 +124,18 @@ readEntityKind _   = Nothing
 type Position = Int
 
 
-data Entity = Entity { entityPosition :: Position
+data Entity = Entity { entityId       :: Int
+                     , entityPosition :: Position
                      , entityKind     :: EntityKind
                      , entityHP       :: Int
                      , entityAttack   :: Int
                      }
 
 instance Show Entity where
-  show (Entity p k h _) = printf "%s(%d): %d" (show k) p h
+  show (Entity _ p k h _) = printf "%s(%d): %d" (show k) p h
+
+instance Eq Entity where
+  (==) = (==) `on` entityId
 
 type Entities = M.Map Position Entity
 
@@ -181,6 +201,8 @@ neighbours x = do
 entityAtPosition :: Position -> GameMonad s (Maybe Entity)
 entityAtPosition p = M.lookup p <$> gets gameEntities
 
+-- modifyEntity removes the oldEntity from the map
+-- and inserts the new one if it's not Nothing
 modifyEntity :: Entity -> Maybe Entity -> GameMonad s ()
 modifyEntity oldEntity newEntity = do
   gameState <- get
@@ -191,13 +213,16 @@ modifyEntity oldEntity newEntity = do
         Just e  -> M.insert (entityPosition e) e entities'
   put $ gameState { gameEntities = newEntities }
 
+countElves :: Entities -> Int
+countElves = M.size . M.filter (\e -> entityKind e == Elf)
+
 
 
 -- running the game
 
-runGame :: String -> (GameState, GameLog)
-runGame input = runST $ do
-  (theMap, entities, width) <- parseGame input
+runGame :: Int -> String -> (GameState, GameLog)
+runGame elfAttack input = runST $ do
+  (theMap, entities, width) <- parseGame elfAttack input
   execRWST (playGame 1) (GameInfo theMap width) $ GameState entities
   where playGame roundIndex = do
           canContinue <- gameRound roundIndex
@@ -217,19 +242,21 @@ gameRound roundIndex = do
 
 
 entityTurn :: Entity -> GameMonad s Bool
-entityTurn entity = do
+entityTurn entityAtBeginningOfTurn = do
   entities <- gets gameEntities
-  let alreadyDead = entityPosition entity `M.notMember` entities
-  if alreadyDead
-    then return True
-    else let enemies = M.elems $ M.filter (enemyOf entity) entities
-         in if L.null enemies
-            then return False
-            else do
-              distanceMap <- createDistanceMap entity enemies
-              newEntity   <- doMove entity distanceMap
-              doAttack newEntity
-              return True
+  case M.lookup (entityPosition entityAtBeginningOfTurn) entities of -- find the entity at this position
+    Nothing -> return True                                           -- Nothing: it died
+    Just  e ->                                                       -- Just e:  we found one!
+      if e /= entityAtBeginningOfTurn                                -- but is it really the same?
+      then return True                                               -- if no: another entity took its place, it's dead
+      else let enemies = M.elems $ M.filter (enemyOf e) entities     -- if yes: where are the enemies?
+           in if L.null enemies                                      -- is there any enemy actually?
+              then return False                                      -- if nope: end of the fight
+              else do                                                -- if yes:
+                distanceMap <- createDistanceMap e enemies           -- create the distance map
+                newEntity   <- doMove e distanceMap                  -- try to move
+                doAttack newEntity                                   -- try to attack
+                return True
 
 doMove :: Entity -> DistanceMap s -> GameMonad s Entity
 doMove entity dm = do
@@ -331,12 +358,13 @@ checkPositionConsistent es = forM_ es $ \e -> do
 
 -- parsing
 
-parseGamePure :: String -> (Vector Char, Entities, Int)
-parseGamePure input = (immutableMap, M.fromList entityList, width)
+parseGamePure :: Int -> String -> (Vector Char, Entities, Int)
+parseGamePure elfAttack input = (immutableMap, M.fromList entityList, width)
   where immutableMap = V.fromList flatInput
         entityList   = catMaybes [ case readEntityKind c of
-                                     Nothing -> Nothing
-                                     Just ek -> Just (p, Entity p ek 200 3)
+                                     Nothing     -> Nothing
+                                     Just Elf    -> Just (p, Entity p p Elf    200 elfAttack)
+                                     Just Goblin -> Just (p, Entity p p Goblin 200 3)
                                  | c <- flatInput
                                  | p <- [0..]
                                  ]
@@ -345,9 +373,9 @@ parseGamePure input = (immutableMap, M.fromList entityList, width)
         flatInput    = L.concat splitInput
 
 
-parseGame :: String -> ST s (GameMap s, Entities, Int)
-parseGame input = do
-  let (im, es, w) = parseGamePure input
+parseGame :: Int -> String -> ST s (GameMap s, Entities, Int)
+parseGame elfAttack input = do
+  let (im, es, w) = parseGamePure elfAttack input
   mutableMap <- unsafeThaw im
   return (mutableMap, es, w)
 
@@ -378,9 +406,9 @@ prettyPrint (theMap, width, entities, r, gameLog) =
                      , show <$> gameLog
                      ]
 
-runDebug :: IO ()
-runDebug = do
-  let (gm, es, w) = parseGamePure testData
+runDebug :: Int -> IO ()
+runDebug ea = do
+  let (gm, es, w) = parseGamePure ea testData
       initState       = (gm, w, es, 0, [])
   run initState
   where run s = do
