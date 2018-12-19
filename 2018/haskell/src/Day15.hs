@@ -10,16 +10,16 @@ module Day15 (day15_1, day15_2) where
 
 -- import
 
+import           Control.Concurrent
 import           Control.Monad.RWS.Strict
 import           Control.Monad.ST
 import           Data.Function
 import           Data.List                   as L
 import           Data.List.Split             as L
-import           Data.Map.Strict             as M
+import qualified Data.Map.Strict             as M
 import           Data.Maybe
-import           Data.Vector.Unboxed         as V hiding (forM, forM_, length,
-                                                   (++))
-import           Data.Vector.Unboxed.Mutable as V
+import qualified Data.Vector.Unboxed         as V hiding (length)
+import qualified Data.Vector.Unboxed.Mutable as V
 import           Text.Printf
 
 import           Common
@@ -31,35 +31,56 @@ import           Common
 day15_1 :: Solution
 day15_1 input = show $ lastFullRound * remainingHealth
   where (gs, gl) = runGame 3 input
-        lastFullRound = L.last [r | TurnEnded r <- gl]
-        remainingHealth = L.sum $ entityHP <$> gameEntities gs
+        lastFullRound = last [r | TurnEnded r <- gl]
+        remainingHealth = sum $ entityHP <$> gameEntities gs
 
 
 day15_2 :: Solution
-day15_2 s = findResult 3
-  where input = s
-        (_, entities, _) = parseGamePure 3 input
-        elfNumber        = countElves entities
-        findResult elfa  =
-          let (gs, gl) = runGame elfa input
-              lastFullRound   = L.last [r | TurnEnded r <- gl]
-              remainingHealth = L.sum $ entityHP <$> gameEntities gs
-              remainingElves  = countElves $ gameEntities gs
-          in if remainingElves == elfNumber
-             then show (lastFullRound * remainingHealth) ++ ", " ++ show elfa
-             else findResult $ elfa + 1
+day15_2 input = findResult 3
+  where findResult elfAttack  =
+          let (gs, gl) = runGame elfAttack input
+              lastFullRound   = last [r | TurnEnded r <- gl]
+              remainingHealth = sum $ entityHP <$> gameEntities gs
+              elfDeaths       = countTrue [entityKind e == Elf | EntityDeath e <- gl]
+          in if elfDeaths == 0
+             then show (lastFullRound * remainingHealth) ++ ", " ++ show elfAttack
+             else findResult $ elfAttack + 1
 
 
 testData :: String
-testData = "#########\n\
-           \#G......#\n\
-           \#.E.#...#\n\
-           \#..##..G#\n\
-           \#...##..#\n\
-           \#...#...#\n\
-           \#.G...G.#\n\
-           \#.....G.#\n\
-           \#########\n"
+testData = "################################\n\
+           \#####################...########\n\
+           \###################....G########\n\
+           \###################....#########\n\
+           \#######.##########......########\n\
+           \#######G#########........#######\n\
+           \#######G#######.G.........######\n\
+           \#######.######..G.........######\n\
+           \#######.......##.G...G.G..######\n\
+           \########..##..#....G......G#####\n\
+           \############...#.....G.....#####\n\
+           \#...#######..........G.#...#####\n\
+           \#...#######...#####G......######\n\
+           \##...######..#######G.....#.##.#\n\
+           \###.G.#####.#########G.........#\n\
+           \###G..#####.#########.......#.E#\n\
+           \###..######.#########..........#\n\
+           \###.......#.#########.....E..E.#\n\
+           \#####G...#..#########.......#..#\n\
+           \####.G.#.#...#######.....G.....#\n\
+           \########......#####...........##\n\
+           \###########..................###\n\
+           \##########.................#####\n\
+           \##########.................#####\n\
+           \############..E.........E.....##\n\
+           \############.........E........##\n\
+           \###############.#............E##\n\
+           \##################...E..E..##.##\n\
+           \####################.#E..####.##\n\
+           \################.....######...##\n\
+           \#################.#..###########\n\
+           \################################\n"
+
 
 
 {-
@@ -143,8 +164,8 @@ type Entities = M.Map Position Entity
 
 -- game
 
-type GameMap s = STVector s Char
-type DistanceMap s = STVector s Int
+type GameMap s = V.STVector s Char
+type DistanceMap s = V.STVector s Int
 
 data GameInfo s = GameInfo { gameMap   :: GameMap s
                            , gameWidth :: Int
@@ -184,7 +205,7 @@ isDead e = entityHP e <= 0
 atPos :: Position -> GameMonad s Char
 atPos x = do
   theMap <- asks gameMap
-  V.read theMap x
+  V.unsafeRead theMap x
 
 isWalkable :: Position -> GameMonad s Bool
 isWalkable x = (== '.') <$> atPos x
@@ -216,9 +237,6 @@ modifyEntity oldEntity newEntity = do
 updateEntity :: Entity -> GameMonad s ()
 updateEntity e = modifyEntity e $ Just e
 
-countElves :: Entities -> Int
-countElves = M.size . M.filter (\e -> entityKind e == Elf)
-
 
 
 -- running the game
@@ -241,7 +259,7 @@ gameRound roundIndex = do
   entities <- M.elems <$> gets gameEntities
   checkPositionConsistent entities
   result   <- sequence $ entityTurn <$> entities
-  return $ L.and result
+  return $ and result
 
 
 entityTurn :: Entity -> GameMonad s Bool
@@ -253,7 +271,7 @@ entityTurn entityAtBeginningOfTurn = do
       if e /= entityAtBeginningOfTurn                                -- but is it really the same?
       then return True                                               -- if no: another entity took its place, it's dead
       else let enemies = M.elems $ M.filter (enemyOf e) entities     -- if yes: where are the enemies?
-           in if L.null enemies                                      -- is there any enemy actually?
+           in if null enemies                                        -- is there any enemy actually?
               then return False                                      -- if nope: end of the fight
               else do                                                -- if yes:
                 distanceMap <- createDistanceMap e enemies           -- create the distance map
@@ -271,7 +289,7 @@ actionMoveEntity entity newPos = do
   tell [EntityMove entity newEntity]
   modifyEntity entity $ Just newEntity
   theMap <- asks gameMap
-  V.swap theMap oldPos newPos
+  V.unsafeSwap theMap oldPos newPos
   return newEntity
 
 actionKillEntity :: Entity -> GameMonad s ()
@@ -279,25 +297,25 @@ actionKillEntity entity = do
   tell [EntityDeath entity]
   modifyEntity entity Nothing
   theMap <- asks gameMap
-  V.write theMap (entityPosition entity) '.'
+  V.unsafeWrite theMap (entityPosition entity) '.'
 
 
 doMove :: Entity -> DistanceMap s -> GameMonad s Entity
 doMove entity dm = do
   let oldPos = entityPosition entity
-  currentDistance <- V.read dm oldPos
+  currentDistance <- V.unsafeRead dm oldPos
   neighbs         <- neighbours oldPos
   -- rank all neighbouring cells
   scores          <- fmap (sort . catMaybes) $ forM neighbs $ \n -> do
-    neighbDistance <- V.read dm n
+    neighbDistance <- V.unsafeRead dm n
     return $ if neighbDistance < currentDistance
              then Just (neighbDistance, n)
              else Nothing
   -- if one is better than the current one: do move!
-  if L.null scores || currentDistance == 0
+  if null scores || currentDistance == 0
     then return entity
     else do
-      let (_, newPos) = L.head scores
+      let (_, newPos) = head scores
       actionMoveEntity entity newPos
 
 doAttack :: Entity -> GameMonad s ()
@@ -312,8 +330,8 @@ doAttack entity = do
       then Just $ damage (entityAttack entity) otherEntity
       else Nothing
   -- if I have a nearby enemy, attack it!
-  unless (L.null scores) $ do
-    let damagedEnemy = L.head scores
+  unless (null scores) $ do
+    let damagedEnemy = head scores
     tell [EntityAttack entity damagedEnemy]
     if isDead damagedEnemy
       then actionKillEntity damagedEnemy
@@ -326,42 +344,42 @@ doAttack entity = do
 createDistanceMap :: Entity -> [Entity] -> GameMonad s (DistanceMap s)
 createDistanceMap entity enemies = do
   theMap      <- asks gameMap
-  distanceMap <- unsafeNew $ V.length theMap
+  distanceMap <- V.unsafeNew $ V.length theMap
   -- create distance map fronm my entity to all reachable cells
-  set distanceMap 9999
+  V.set distanceMap 9999
   fillMap distanceMap 0 0 [entityPosition entity]
   -- sort targets (neighbours of enemies) by distance from entity
-  queue       <- fmap (sort . L.concat) $ forM enemies $ \e -> do
+  queue       <- fmap (sort . concat) $ forM enemies $ \e -> do
     allNeighbours  <- neighbours $ entityPosition e
     goodNeighbours <- forM allNeighbours $ \n -> do
-      distance <- V.read distanceMap n
+      distance <- V.unsafeRead distanceMap n
       return $ if distance < 9999
                then Just (distance, n)
                else Nothing
     return $ catMaybes goodNeighbours
   -- find shortest path from target to entity (if there's a target)
-  set distanceMap 9999
-  unless (L.null queue) $ do
-    let (_, target) = L.head queue
+  V.set distanceMap 9999
+  unless (null queue) $ do
+    let (_, target) = head queue
     fillMap distanceMap (entityPosition entity) 0 [target]
   return distanceMap
 
 fillMap :: DistanceMap s -> Position -> Int -> [Position] -> GameMonad s ()
 fillMap _       _      _               []    = return ()                           -- no element left to process: no path towards the target
 fillMap distMap target currentDistance queue
-  | target `L.elem` queue = write distMap target currentDistance                   -- target in the queue? we found a path, stopping now
+  | target `elem` queue = V.unsafeWrite distMap target currentDistance             -- target in the queue? we found a path, stopping now
   | otherwise             = do
       nextQueue <- forM queue $ \p -> do                                           -- for each cell at `currentDistance` from my starting point
-        write distMap p currentDistance                                            -- write that value in the distance map
+        V.unsafeWrite distMap p currentDistance                                    -- write that value in the distance map
         allNeighbours  <- neighbours p                                             -- get all the neighbours
         goodNeighbours <- forM allNeighbours $ \n -> do                            -- filter neighbours
           walkable <- isWalkable n                                                 -- is this an allowed cell?
-          distance <- V.read distMap n                                             -- what distance has been found for it so far?
+          distance <- V.unsafeRead distMap n                                       -- what distance has been found for it so far?
           return $ if (n == target || walkable) && distance > currentDistance + 1  -- if it's worth choosing it as the next target
                    then Just n                                                     -- then yeah let's keep it!
                    else Nothing
         return $ catMaybes goodNeighbours
-      fillMap distMap target (currentDistance+1) $ nub $ L.concat nextQueue        -- recursive call with our new input queue
+      fillMap distMap target (currentDistance+1) $ nub $ concat nextQueue          -- recursive call with our new input queue
 
 
 
@@ -378,7 +396,7 @@ checkPositionConsistent es = forM_ es $ \e -> do
 
 -- parsing
 
-parseGamePure :: Int -> String -> (Vector Char, Entities, Int)
+parseGamePure :: Int -> String -> (V.Vector Char, Entities, Int)
 parseGamePure elfAttack input = (immutableMap, M.fromList entityList, width)
   where immutableMap = V.fromList flatInput
         entityList   = catMaybes [ case readEntityKind c of
@@ -389,49 +407,79 @@ parseGamePure elfAttack input = (immutableMap, M.fromList entityList, width)
                                  | p <- [0..]
                                  ]
         splitInput   = lines input
-        width        = L.length $ L.head splitInput
-        flatInput    = L.concat splitInput
+        width        = length $ head splitInput
+        flatInput    = concat splitInput
 
 
 parseGame :: Int -> String -> ST s (GameMap s, Entities, Int)
 parseGame elfAttack input = do
   let (im, es, w) = parseGamePure elfAttack input
-  mutableMap <- unsafeThaw im
+  mutableMap <- V.unsafeThaw im
   return (mutableMap, es, w)
 
 
 
 -- debug
 
-type DebugState = (Vector Char, Int, Entities, Int, GameLog)
+type DebugState = (V.Vector Char, Int, Entities, Int, GameLog)
 
-debugRound :: DebugState -> DebugState
+debugRound :: DebugState -> (Bool, DebugState)
 debugRound (theMap, width, entities, r, _) =
-  (newMap, width, gameEntities newState, r+1, gameLog)
-  where (newMap, newState, gameLog) = runST $ do
+  (cc, (newMap, width, gameEntities newState, r+1, gameLog))
+  where ((cc, newMap), newState, gameLog) = runST $ do
           mutableMap <- V.thaw theMap
           runRWST doOneRound (GameInfo mutableMap width) $ GameState entities
-        doOneRound :: GameMonad s (Vector Char)
+        doOneRound :: GameMonad s (Bool, V.Vector Char)
         doOneRound = do
-          gameRound r
-          mMap <- asks gameMap
-          V.freeze mMap
+          canContinue <- gameRound r
+          imMap       <- V.freeze =<< asks gameMap
+          return (canContinue, imMap)
 
 
 prettyPrint :: DebugState -> String
 prettyPrint (theMap, width, entities, r, gameLog) =
-  unlines $ L.concat [ ["round #" ++ show r]
+  unlines $ concat [ ["round #" ++ show r]
                      , chunksOf width $ V.toList theMap
                      , show <$> M.elems entities
                      , show <$> gameLog
                      ]
 
 runDebug :: Int -> IO ()
-runDebug ea = do
-  let (gm, es, w) = parseGamePure ea testData
-      initState       = (gm, w, es, 0, [])
-  run initState
-  where run s = do
+runDebug ea = run (gm, w, es, 0, [])
+  where (gm, es, w) = parseGamePure ea testData
+        run s = do
           putStr $ prettyPrint s
           i <- getLine
-          unless (i == "q") $ run $ debugRound s
+          unless (i == "q") $ run $ snd $ debugRound s
+
+runDebugAnimate :: Int -> IO ()
+runDebugAnimate ea = run (gm, w, es, 0, [])
+  where tick = 120000
+        (gm, es, w) = parseGamePure ea testData
+        run s@(v, _, e, _, _) = do
+          render v e
+          let (cc, nd@(v2, _, e2, _, _)) = debugRound s
+          threadDelay tick
+          if cc
+            then run nd
+            else render v2 e2
+        render v e = do
+          putStr "\ESC[2J" -- Clear terminal screen
+          putStr $ unlines [ concat [ if c `elem` "EG"
+                                        then let (cr,cg,cb) = color $ e M.! (y*w+x)
+                                             in printf "\ESC[38;2;%d;%d;%dm%c\ESC[0m" cr cg cb c
+                                        else [c]
+                                    | (x,c) <- zip [0..] r
+                                    ]
+                           | (y,r) <- zip [0..] $ chunksOf w $ V.toList v
+                           ]
+        color :: Entity -> (Int,Int,Int)
+        color e = let hp = max (entityHP e) 0
+                  in if hp <= 100 then
+                       ( 255
+                       , div (255 * hp) 100
+                       , 40)
+                     else
+                       ( div (255 * (200 - hp)) 100
+                       , 255
+                       , 40)
