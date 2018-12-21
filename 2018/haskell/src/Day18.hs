@@ -73,9 +73,8 @@ readAcre c   = error $ "unexpected char '" ++ [c] ++ "'"
 type Point = (Int, Int)
 type Acres = A.Array Point Acre
 
-
 -- Since we're gonna need them, let's define a few helper functions
--- related to positioning. What are the height neighbours of a given
+-- related to positioning. What are the eight neighbours of a given
 -- point?
 
 neighboursOf :: Point -> [Point]
@@ -84,14 +83,12 @@ neighboursOf (y,x) = [ (y-1,x-1), (y-1,x), (y-1,x+1)
                      , (y+1,x-1), (y+1,x), (y+1,x+1)
                      ]
 
-
 -- Likewise: let's define a lookup function on Acre.
 
 lookupAcre :: Acres -> Point -> Acre
 lookupAcre as p
   | inRange (bounds as) p = as ! p
   | otherwise             = OutOfBounds
-
 
 -- We can already write how to parse inputs.
 -- We make our land 1-indexed, because why not?
@@ -108,7 +105,6 @@ parseAcres s =
         coords = ( (     1,     1) -- from top left (1,1)
                  , (height, width) -- to bottom right (h,w)
                  )
-
 
 -- Finally, let's implement the rules of the game. Given an acre and
 -- its neighbours, what is the outcome?
@@ -162,20 +158,21 @@ step acre neighbours =
 -- peek :: pos -> Store pos value -> value
 -- peek = extract ... seek
 
--- But what about does "extend" do? Well, if we replace "w" by "Store
--- pos" in the definiton, we get:
+-- But what about "extend"? Well, if we replace "w" by "Store pos" in
+-- the definiton, we get:
 --   extend :: (Store pos a -> b) -> Store pos a -> Store pos b
 
 -- So... given a function that to a given position and information
 -- about its surroundings associates a new value, we can create a new
 -- version of our store that holds the new values. It's kinda like
 -- "map", but if along the value we were passing the entire list as an
--- argument.
+-- argument, and not on lists, and... yeah, not a great analogy. ^^"
 
 -- But it doesn't actually "store" the information, despite its name;
 -- since it knows how to lookup `a` values from a position, and how to
--- transform `a` values to `b` values... It can deal with infinitely
--- generated values! Move the forklift, call the function, and voilà!
+-- transform `a` values to `b` values... It can deal with an infinite
+-- amount of positions! Move the forklift, call the function, and
+-- voilà!
 --   extend f s@(Store _ p) = Store (\x -> f $ seek x s) p
 
 -- So! Let's use it to represent our automaton!
@@ -206,7 +203,6 @@ gridTo2DList (h,w) g = [[peek (y,x) g | x <- [1..w]] | y <- [1..h]]
 
 renderGrid :: (Int, Int) -> Grid Acre -> String
 renderGrid = unlines . map (show =<<) ... gridTo2DList
-
 
 -- and let's try it in GHCI!
 {- stack ghci
@@ -245,7 +241,7 @@ renderGrid = unlines . map (show =<<) ... gridTo2DList
 -- a store! Under the hood, MemoCombinators uses Tries to build lazy
 -- structures, it's pretty amazing!
 
--- memoize just update a store to memoize its function
+-- memoize just updates a store to memoize its function
 
 memoize :: Grid a -> Grid a
 memoize g = store (pair integral integral f) s
@@ -264,9 +260,10 @@ update = memoize . stepAll
 -- PART 4: some debugging tools
 
 -- animate clears the screen and displays the current state of our
--- acres every 250 ms. Since converting a given grid to a string can
--- be quite slow, i use deepseq to force the string to be fully
--- evaluated before we clear the screen, minimizing the blinking.
+-- acres every 250 ms. Since evaluating a grid and converting it to a
+-- string can be quite slow, i use deepseq to force the string to be
+-- fully evaluated before we clear the screen, minimizing the
+-- blinking.
 
 -- since this uses update, it is fast!
 -- you can test it by running `stack ghci`, loading this file, and:
@@ -381,7 +378,7 @@ day18_2 input = show $ resourceValue maxbounds finalGrid
 -- ################################################################
 -- PART 6: but wait there's moar
 
--- out of curiosity: let's build an imperative version, to compare!
+-- out of curiosity: let's build an "imperative" version, to compare!
 
 updateAcres :: Acres -> Acres
 updateAcres !acres = array (bounds acres) $ do
@@ -399,7 +396,7 @@ renderAcres = unlines . map (show . snd =<<) . groupOn (fst . fst) . assocs
 -- of our infinite automaton, or do anything fancy. This is more
 -- efficient, but less generic, less expressive.
 
--- trade-offs, I guess?
+-- trade-offs, i guess?
 
 -- Anyway, thanks for reading this far!
 -- This was fun. :)
