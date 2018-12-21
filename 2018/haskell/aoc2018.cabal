@@ -24,4 +24,5 @@ executable aoc2018
                        filepath,parsec,split,MissingH,safe,array,containers,
                        tasty,tasty-hunit,tasty-quickcheck,pqueue,criterion,
                        parallel,vector,mtl,cryptohash-md5,bytestring,
-                       base16-bytestring
+                       base16-bytestring,comonad,data-memocombinators,
+                       deepseq
