@@ -60,6 +60,9 @@ countTrue = countIf id
 countIf :: (a -> Bool) -> [a] -> Int
 countIf = length ... filter
 
+count :: Eq a => a -> [a] -> Int
+count a = length . filter (a ==)
+
 minimumOn :: Ord b => (a -> b) -> [a] -> a
 minimumOn = minimumBy . on compare
 
@@ -85,6 +88,7 @@ hashMD5s steps input = unpack $ foldl' (const . encode . hash) (pack input) [1..
 
 (...) :: (c -> d) -> (a -> b -> c) -> a -> b -> d
 (...) = (.) (.) (.)
+infixr 8 ...
 
 
 
