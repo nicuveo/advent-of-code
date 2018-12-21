@@ -464,7 +464,7 @@ runDebugAnimate ea = run (gm, w, es, 0, [])
             then run nd
             else render v2 e2
         render v e = do
-          putStr "\ESC[2J" -- Clear terminal screen
+          putStr "\ESC[2J" -- clears terminal screen
           putStr $ unlines [ concat [ if c `elem` "EG"
                                         then let (cr,cg,cb) = color $ e M.! (y*w+x)
                                              in printf "\ESC[38;2;%d;%d;%dm%c\ESC[0m" cr cg cb c
