@@ -26,10 +26,11 @@ day12_1 input = show $ sum [pot | (pot, True) <- assocs result]
 
 
 day12_2 :: Solution
-day12_2 input = show $ sum [pot + 50000000000 - step | (pot, True) <- assocs result]
+day12_2 input = show $ sum [pot + 50000000000 - diff | (pot, True) <- assocs result]
   where (start, rules) = parseInput input
-        (step, result) = findFixedPoint rules M.empty 0 start
+        (diff, result) = findFixedPoint rules M.empty 0 start
 
+findFixedPoint :: [Rule] -> M.Map [Plant] Int -> Int -> Plants -> (Int, Array Int Plant)
 findFixedPoint rules history iteration plants
   | toList plants `M.member` history = (iteration, plants)
   | otherwise = findFixedPoint rules (M.insert (toList plants) iteration history) (iteration + 1) $ step rules plants
