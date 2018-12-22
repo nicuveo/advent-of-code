@@ -8,7 +8,7 @@ module Day08 (day08_1, day08_2) where
 
 import           Data.Tree
 import           Safe
-import           Text.Parsec
+import           Text.Parsec as P
 
 import           Common
 
@@ -36,6 +36,6 @@ parseTree = parseWith tree
   where tree = do
           n <- intParser
           m <- intParser
-          subTrees <- count n tree
-          metadata <- count m intParser
+          subTrees <- P.count n tree
+          metadata <- P.count m intParser
           return $ Node metadata subTrees
