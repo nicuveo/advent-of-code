@@ -350,7 +350,7 @@ day18_2 input = show $ resourceValue maxbounds finalGrid
 -- PART 5: parting thoughts
 
 -- Positives:
--- * i have built an intuition for comonads in genral, and Store
+-- * i have built an intuition for comonads in general, and Store
 --   in particular! \o/
 -- * the resulting code is terse and simple, and the responsibilities
 --   are clearly separate between `neighboursOf`, `step`, and `stepAll`.
