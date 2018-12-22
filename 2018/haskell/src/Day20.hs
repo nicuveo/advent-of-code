@@ -72,7 +72,6 @@ parseRE = parseWith regex
 
 
 
-
 -- points
 
 type Point = (Int, Int)
@@ -106,7 +105,6 @@ createDistanceMap :: Regex -> DistanceMap
 createDistanceMap  r = execState (foldExprM walk startPoint r) initialMap
   where initialMap = M.singleton startPoint 0
         startPoint = (0,0)
-
 
 
 
