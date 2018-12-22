@@ -49,13 +49,13 @@ instance Functor Expression where
 
 foldExpr :: Eq a => (a -> x -> a) -> a -> Expression x -> [a]
 foldExpr f a (Value   m ) = [f a m]
-foldExpr f a (Product ms) = nub $ foldl (\as r -> concat [foldExpr f x r | x <- as]) [a] ms
-foldExpr f a (Sum     rs) = nub $ foldExpr f a =<< rs
+foldExpr f a (Product ms) = nub $ foldl (\as r -> concat $ foldExpr f <$> as <*> [r]) [a] ms
+foldExpr f a (Sum     rs) = nub $ foldl (\as r -> as ++ foldExpr f a r)               []  rs
 
 foldExprM :: (Monad m, Eq a) => (a -> x -> m a) -> a -> Expression x -> m [a]
 foldExprM f a (Value   m ) = pure <$> f a m
-foldExprM f a (Product ms) = nub <$> foldM (\as r -> concat <$> sequence [foldExprM f x r | x <- as]) [a] ms
-foldExprM f a (Sum     rs) = nub . concat <$> sequence (foldExprM f a <$> rs)
+foldExprM f a (Product ms) = nub <$> foldM (\as r -> fmap concat $ sequence $ foldExprM f <$> as <*> [r]) [a] ms
+foldExprM f a (Sum     rs) = nub <$> foldM (\as r -> (as ++) <$> foldExprM f a r)                         []  rs
 
 
 
