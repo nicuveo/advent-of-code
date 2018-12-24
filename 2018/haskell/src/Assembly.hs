@@ -8,10 +8,9 @@ module Assembly where
 
 -- imports
 
-import           Control.Monad.State
+import           Control.Monad.ST
 import           Data.Bits
 import qualified Data.Map.Strict             as M
-import qualified Data.Vector.Unboxed         as V (thaw)
 import qualified Data.Vector.Unboxed.Mutable as V
 
 import           Common
@@ -26,11 +25,11 @@ class Register r where
 
 class Monad m => RegisterM r m where
   regRM :: Int -> r -> m Int
-  regWM :: Int -> Int -> r -> m r
+  regWM :: Int -> Int -> r -> m ()
 
 
-type Instruction  r   = Int -> Int -> Int -> r ->   r
-type InstructionM r m = Int -> Int -> Int -> r -> m r
+type Instruction  r   = Int -> Int -> Int -> r -> r
+type InstructionM r m = Int -> Int -> Int -> r -> m ()
 
 
 
@@ -42,17 +41,27 @@ instance Register [Int] where
 
 
 
+-- register mutable vector
+
+instance RegisterM (V.MVector s Int) (ST s) where
+  regRM i   l = V.read  l i
+  regWM i v l = V.write l i v
+
+
+
 -- instructions helpers
 
-rrInst, riInst, irInst :: Register r => (Int -> Int -> Int) -> Instruction r
+rrInst, riInst, irInst, iiInst :: Register r => (Int -> Int -> Int) -> Instruction r
 rrInst (<#>) a b c r = regW c (regR a r <#> regR b r) r
 riInst (<#>) a b c r = regW c (regR a r <#>      b  ) r
 irInst (<#>) a b c r = regW c (     a   <#> regR b r) r
+iiInst (<#>) a b c   = regW c (     a   <#>      b  )
 
-rrInstM, riInstM, irInstM :: RegisterM r m => (Int -> Int -> Int) -> InstructionM r m
+rrInstM, riInstM, irInstM, iiInstM :: RegisterM r m => (Int -> Int -> Int) -> InstructionM r m
 rrInstM (<#>) a b c r = do { x <- regRM a r; y <- regRM b r; regWM c (x <#> y) r }
 riInstM (<#>) a b c r = do { x <- regRM a r;                 regWM c (x <#> b) r }
 irInstM (<#>) a b c r = do {                 y <- regRM b r; regWM c (a <#> y) r }
+iiInstM (<#>) a b c   =                                      regWM c (a <#> b)
 
 
 
@@ -77,6 +86,16 @@ instructionsNames = M.fromList [ ("addr", addr), ("addi", addi)
                                , ("gtir", gtir), ("gtri", gtri), ("gtrr", gtrr)
                                , ("eqir", eqir), ("eqri", eqri), ("eqrr", eqrr)
                                ]
+
+instructionsNamesM :: RegisterM r m => M.Map String (InstructionM r m)
+instructionsNamesM = M.fromList [ ("addr", addrM), ("addi", addiM)
+                                , ("mulr", mulrM), ("muli", muliM)
+                                , ("banr", banrM), ("bani", baniM)
+                                , ("borr", borrM), ("bori", boriM)
+                                , ("setr", setrM), ("seti", setiM)
+                                , ("gtir", gtirM), ("gtri", gtriM), ("gtrr", gtrrM)
+                                , ("eqir", eqirM), ("eqri", eqriM), ("eqrr", eqrrM)
+                                ]
 
 addr, addi :: Register r => Instruction r
 mulr, muli :: Register r => Instruction r
@@ -104,10 +123,10 @@ borr  = rrInst  (.|.)
 bori  = riInst  (.|.)
 borrM = rrInstM (.|.)
 boriM = riInstM (.|.)
-setr  = rrInst  const
-seti  = irInst  const
-setrM = rrInstM const
-setiM = irInstM const
+setr  = riInst  const
+seti  = iiInst  const
+setrM = riInstM const
+setiM = iiInstM const
 
 gtir, gtri, gtrr :: Register r => Instruction r
 eqir, eqri, eqrr :: Register r => Instruction r
