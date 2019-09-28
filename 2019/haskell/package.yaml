@@ -1,0 +1,65 @@
+name: aoc2019
+
+ghc-options:
+  - -Wall
+  - -fwarn-tabs
+  - -fno-warn-type-defaults
+  - -fno-warn-unused-do-bind
+  - -fno-warn-unused-top-binds
+dependencies:
+  - base >= 4.7 && < 5
+  - MissingH
+  - QuickCheck
+  - array
+  - base16-bytestring
+  - bytestring
+  - containers
+  - cryptohash-md5
+  - deepseq
+  - filepath
+  - mtl
+  - parallel
+  - parsec
+  - pqueue
+  - safe
+  - split
+  - tasty
+  - tasty-hunit
+  - tasty-quickcheck
+  - vector
+
+library:
+  source-dirs: lib
+
+_exe: &exe
+  ghc-options:
+    - -O2
+    - -threaded -rtsopts -with-rtsopts=-N4
+  dependencies: aoc2019
+
+executables:
+  day01: {<<: *exe, main: src/Day01.hs}
+  day02: {<<: *exe, main: src/Day02.hs}
+  day03: {<<: *exe, main: src/Day03.hs}
+  day04: {<<: *exe, main: src/Day04.hs}
+  day05: {<<: *exe, main: src/Day05.hs}
+  day06: {<<: *exe, main: src/Day06.hs}
+  day07: {<<: *exe, main: src/Day07.hs}
+  day08: {<<: *exe, main: src/Day08.hs}
+  day09: {<<: *exe, main: src/Day09.hs}
+  day10: {<<: *exe, main: src/Day10.hs}
+  day11: {<<: *exe, main: src/Day11.hs}
+  day12: {<<: *exe, main: src/Day12.hs}
+  day13: {<<: *exe, main: src/Day13.hs}
+  day14: {<<: *exe, main: src/Day14.hs}
+  day15: {<<: *exe, main: src/Day15.hs}
+  day16: {<<: *exe, main: src/Day16.hs}
+  day17: {<<: *exe, main: src/Day17.hs}
+  day18: {<<: *exe, main: src/Day18.hs}
+  day19: {<<: *exe, main: src/Day19.hs}
+  day20: {<<: *exe, main: src/Day20.hs}
+  day21: {<<: *exe, main: src/Day21.hs}
+  day22: {<<: *exe, main: src/Day22.hs}
+  day23: {<<: *exe, main: src/Day23.hs}
+  day24: {<<: *exe, main: src/Day24.hs}
+  day25: {<<: *exe, main: src/Day25.hs}
