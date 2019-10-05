@@ -8,6 +8,6 @@ if test -n "$GHCOPTS"; then
    opts="--ghc-options $GHCOPTS"
 fi
 
-stack build $opts aoc2019:day$day
+stack build $opts aoc2019:$day
 ulimit -v 3145728 -m 3145728
-stack exec day$day -- ../input "$@"
+stack exec $day -- ../input "$@"

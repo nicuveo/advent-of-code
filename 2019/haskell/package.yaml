@@ -19,6 +19,7 @@ dependencies:
   - parallel
   - parsec
   - pqueue
+  - random
   - safe
   - split
   - tasty
@@ -38,6 +39,10 @@ _exe: &exe
   dependencies: aoc2019
 
 executables:
+  animation_test: {
+    <<: *exe,
+    main: src/AnimationTest.hs
+  }
   day01: {<<: *exe, main: src/Day01.hs}
   # day02: {<<: *exe, main: src/Day02.hs}
   # day03: {<<: *exe, main: src/Day03.hs}
