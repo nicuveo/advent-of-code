@@ -3,6 +3,7 @@ name: aoc2019
 ghc-options:
   - -Wall
   - -fwarn-tabs
+  - -fno-warn-type-defaults
   - -fno-warn-unused-do-bind
 dependencies:
   - base >= 4.7 && < 5
@@ -16,6 +17,7 @@ dependencies:
   - deepseq
   - extra
   - filepath
+  - monad-loops
   - mtl
   - parallel
   - parsec
@@ -35,7 +37,6 @@ _exe: &exe
   ghc-options:
     - -O2
     - -threaded -rtsopts -with-rtsopts=-N4
-    - -fno-warn-type-defaults
     - -fno-warn-unused-top-binds
   dependencies: aoc2019
 

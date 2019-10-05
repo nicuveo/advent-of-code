@@ -1,5 +1,4 @@
-{-# LANGUAGE BangPatterns               #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE BangPatterns #-}
 
 module AOC.Debug.Animate where
 
@@ -9,8 +8,11 @@ module AOC.Debug.Animate where
 
 import           Control.Concurrent
 import           Control.Exception
-import           Control.Monad.Extra
+import           Control.Monad.Extra hiding (whileM)
+import           Control.Monad.Loops (whileM)
+import           Data.Maybe
 import           Data.Word
+import           System.IO
 import           Text.Printf
 
 
@@ -50,14 +52,41 @@ resetCursor = putStr "\ESC[;H"
 -- animation delay
 
 type Milliseconds = Int
-newtype Delay = Delay { delayMs :: Milliseconds}
-  deriving (Show, Eq, Ord, Num)
 
-sleep :: Delay -> IO ()
-sleep = threadDelay . (1000 *) . delayMs
+sleep :: Milliseconds -> IO ()
+sleep = threadDelay . (1000 *)
 
-defaultDelay :: Delay
-defaultDelay = Delay 1000
+defaultDelay :: Milliseconds
+defaultDelay = 1000
+
+
+
+-- keyboard handling
+
+data Action = Pause
+            | Faster
+            | Slower
+            | ResetSpeed
+            | Restart
+            | PrevFrame
+            | NextFrame
+            | Help
+            | Quit
+            deriving Show
+
+peekActions :: IO [Action]
+peekActions = fmap catMaybes $ whileM (hReady stdin) $ do
+  c <- getChar
+  case c of
+    ' ' -> return $ Just Pause
+    '+' -> return $ Just Faster
+    '-' -> return $ Just Slower
+    '=' -> return $ Just ResetSpeed
+    'p' -> return $ Just PrevFrame
+    'n' -> return $ Just NextFrame
+    'q' -> return $ Just Quit
+    '?' -> return $ Just Help
+    _   -> print [c] >> return Nothing
 
 
 
@@ -69,16 +98,50 @@ type UpdateFun a = a -> IO (Maybe a)
 async :: MVar a -> IO a -> IO ()
 async channel action = putMVar channel =<< evaluate =<< action
 
-animate :: ScreenAction -> Delay -> RenderFun a -> UpdateFun a -> a -> IO ()
-animate clear delay render step initialState = do
+noop :: IO ()
+noop = return ()
+
+printHelp :: IO ()
+printHelp = do
+  putStrLn $ unlines [ "AOC animator deluxe keyboard shortcuts."
+                     , "(press any key to continue)"
+                     , ""
+                     , "<space> pause or resume"
+                     , "+       speed up"
+                     , "-       speed down"
+                     , "=       reset original speed"
+                     , "r       restart from original state"
+                     , "p       previous state (when paused)"
+                     , "n       next state (when paused)"
+                     , "?       print this help"
+                     , "q       quit"
+                     ]
+  void getChar
+  clearScreen >> resetCursor
+
+processActions :: Milliseconds -> Milliseconds -> IO (Milliseconds, Bool, Bool)
+processActions original current = peekActions >>= foldM exec (current, False, True)
+  where exec (d, p, c) Faster     = return (max  100 $ round $ fromIntegral d * 0.80, p, c)
+        exec (d, p, c) Slower     = return (min 2000 $ round $ fromIntegral d * 1.25, p, c)
+        exec (d, p, c) ResetSpeed = return (original, p, c)
+        exec (d, p, c) Quit       = return (d, p, False)
+        exec s         Help       = printHelp >> return s
+        exec s         _          = return s
+
+animate :: Milliseconds -> RenderFun a -> UpdateFun a -> a -> IO ()
+animate originalDelay render step initialState = do
+  hSetBuffering stdin NoBuffering
+  hSetEcho stdout False
   clearScreen
   channel <- newEmptyMVar
-  run channel (0 :: Int) initialState
-  where run channel !n !object = do
-          clear
-          printf "Delay: %dms\nFrame: #%d\n" (delayMs delay) n
+  run originalDelay channel (0 :: Int) initialState
+  where run delay channel !n !object = do
+          clearScreen >> resetCursor
+          (delayMs, _, continue) <- processActions originalDelay delay
+          printf "Delay: %dms\nFrame: #%d\n" delayMs n
           putStr $ render object
-          forkIO $ async channel $ step object
-          sleep delay
-          whenM (isEmptyMVar channel) $ putStrLn "(waiting...)"
-          whenJustM (takeMVar channel) $ run channel $ n+1
+          when continue $ do
+            forkIO $ async channel $ step object
+            sleep delayMs
+            whenM (isEmptyMVar channel) $ putStrLn "(waiting...)"
+            whenJustM (takeMVar channel) $ run delayMs channel $ n+1

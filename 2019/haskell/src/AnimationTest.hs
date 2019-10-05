@@ -43,4 +43,4 @@ nextRandomPicture = const $ Just <$> randomPicture
 
 
 main :: IO ()
-main = randomPicture >>= animate resetCursor defaultDelay id nextRandomPicture
+main = randomPicture >>= animate defaultDelay id nextRandomPicture
