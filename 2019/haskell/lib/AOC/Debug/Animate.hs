@@ -8,6 +8,8 @@ module AOC.Debug.Animate where
 -- imports
 
 import           Control.Concurrent
+import           Control.Exception
+import           Control.Monad.Extra
 import           Data.Word
 import           Text.Printf
 
@@ -64,12 +66,19 @@ defaultDelay = Delay 1000
 type RenderFun a = a -> String
 type UpdateFun a = a -> IO (Maybe a)
 
+async :: MVar a -> IO a -> IO ()
+async channel action = putMVar channel =<< evaluate =<< action
+
 animate :: ScreenAction -> Delay -> RenderFun a -> UpdateFun a -> a -> IO ()
-animate clear delay render step initialState = clearScreen >> run (0 :: Int) initialState
-  where run !n !object = do
+animate clear delay render step initialState = do
+  clearScreen
+  channel <- newEmptyMVar
+  run channel (0 :: Int) initialState
+  where run channel !n !object = do
           clear
           printf "Delay: %dms\nFrame: #%d\n" (delayMs delay) n
           putStr $ render object
+          forkIO $ async channel $ step object
           sleep delay
-          maybe noop (run $ succ n) =<< step object
-        noop = return ()
+          whenM (isEmptyMVar channel) $ putStrLn "(waiting...)"
+          whenJustM (takeMVar channel) $ run channel $ n+1
