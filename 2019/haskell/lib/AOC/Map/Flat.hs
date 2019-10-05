@@ -6,11 +6,9 @@ module AOC.Map.Flat where
 
 import           Control.Exception
 import           Data.Function       (on)
-import           Data.Maybe
 import qualified Data.Vector.Unboxed as V
 import           Safe
 
-import           AOC.Misc
 import           AOC.Point
 
 
