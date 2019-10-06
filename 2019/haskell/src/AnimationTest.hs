@@ -25,22 +25,26 @@ toRGB ( toEnum -> r
       , toEnum -> b
       ) = RGB r g b
 
-randomPicture :: IO String
+randomPicture :: IO (Logs, String)
 randomPicture = do
+  rs <- getStdGen
   tl <- randomColor
   bl <- randomColor
   tr <- randomColor
   br <- randomColor
   let lineColors = [(interpolate tl bl y, interpolate tr br y) | y <- [0..19]]
-  return $ unlines [ concat [ flip bgColor "  " $ toRGB $ interpolate lc rc x
-                            | x <- [0..19]
-                            ]
-                   | (lc, rc) <- lineColors
-                   ]
+      result =  unlines [ concat [ flip bgColor "  " $ toRGB $ interpolate lc rc x
+                                 | x <- [0..19]
+                                 ]
+                        | (lc, rc) <- lineColors
+                        ]
+  return (["Seed used: " ++ show rs], result)
 
-nextRandomPicture :: String -> IO (Maybe String)
+nextRandomPicture :: String -> IO (Maybe (Logs, String))
 nextRandomPicture = const $ Just <$> randomPicture
 
 
 main :: IO ()
-main = randomPicture >>= animate defaultDelay id nextRandomPicture
+main = do
+  (_, p) <- randomPicture
+  animate defaultDelay id nextRandomPicture p

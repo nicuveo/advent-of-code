@@ -1,15 +1,16 @@
-{-# LANGUAGE BangPatterns #-}
-
 module AOC.Debug.Animate where
 
 
 
 -- imports
 
+import           Control.Applicative
 import           Control.Concurrent
 import           Control.Exception
-import           Control.Monad.Extra hiding (whileM)
-import           Control.Monad.Loops (whileM)
+import           Control.Monad.Extra        hiding (whileM)
+import           Control.Monad.Loops        (whileM)
+import           Control.Monad.Reader
+import           Control.Monad.State.Strict
 import           Data.Maybe
 import           Data.Word
 import           System.IO
@@ -61,36 +62,77 @@ defaultDelay = 1000
 
 
 
--- animation state
+-- animation data
 
-data AnimState a = AS { originalDelay :: Milliseconds
-                      , currentDelay  :: Milliseconds
-                      , originalState :: a
-                      , stateHistory  :: [a]
-                      , currentIndex  :: Int
-                      , isPaused      :: Bool
-                      , canContinue   :: Bool
-                      , frameCount    :: Int
+type Logs = [String]
+
+type RenderFun a = a -> String
+type UpdateFun a = a -> IO (Maybe (Logs, a))
+
+data AnimParams a = AP { renderFun :: RenderFun a
+                       , updateFun :: UpdateFun a
+                       , origDelay :: Int
+                       , origState :: a
+                       }
+
+data AnimState a = AS { currentDelay :: Milliseconds
+                      , stateHistory :: [(Logs, a)]
+                      , currentIndex :: Int
+                      , isPaused     :: Bool
+                      , canContinue  :: Bool
+                      , frameCount   :: Int
                       }
+
+type AnimMonad a = ReaderT (AnimParams a) (StateT (AnimState a) IO)
+
+
+
+-- animation functions
 
 mkAnimState :: Milliseconds -> a -> AnimState a
-mkAnimState d a = AS d d a [a] 0 False True 0
+mkAnimState d a = AS d [([], a)] 0 False True 0
 
-getCurrent :: AnimState a -> a
-getCurrent as = stateHistory as !! currentIndex as
+getCurrent :: AnimMonad a (Logs, a)
+getCurrent = liftA2 (!!) hist index
+  where hist  = gets stateHistory
+        index = gets currentIndex
 
-insertState :: AnimState a -> a -> AnimState a
-insertState as a = assert (currentIndex as == 0) $
-                   as { frameCount   = frameCount as + 1
-                      , stateHistory = a : take 20 (stateHistory as)
-                      }
+appendState :: (Logs, a) -> AnimMonad a ()
+appendState a = do
+  index <- gets currentIndex
+  assert (index == 0) $ modify $ \s ->
+    s { frameCount   = frameCount s + 1
+      , stateHistory = a : take 20 (stateHistory s)
+      }
 
-stepForwards :: UpdateFun a -> AnimState a -> IO (AnimState a)
-stepForwards f s
-  | currentIndex s > 0 = return $ s { frameCount   = frameCount   s + 1
-                                    , currentIndex = currentIndex s - 1
-                                    }
-  | otherwise = fmap (maybe s (insertState s)) $ f $ getCurrent s
+stepForwards :: AnimMonad a ()
+stepForwards = do
+  index <- gets currentIndex
+  case index of
+    0 -> do
+      f <- asks updateFun
+      a <- snd <$> getCurrent
+      r <- liftIO $ f a
+      whenJust r appendState
+    _ -> modify $ \s ->
+      s { frameCount   = frameCount   s + 1
+        , currentIndex = currentIndex s - 1
+        }
+
+stepBackwards :: AnimMonad a ()
+stepBackwards = do
+  index <- gets currentIndex
+  limit <- length <$> gets stateHistory
+  when (index < limit - 1) $ modify $ \s ->
+    s { frameCount   = frameCount   s - 1
+      , currentIndex = currentIndex s + 1
+      }
+
+restart :: AnimMonad a ()
+restart = do
+  d <- asks origDelay
+  a <- asks origState
+  put $ mkAnimState d a
 
 
 
@@ -126,17 +168,12 @@ peekActions = fmap catMaybes $ whileM (hReady stdin) $ do
 
 -- animate
 
-type RenderFun a = a -> String
-type UpdateFun a = a -> IO (Maybe a)
-
 async :: MVar a -> IO a -> IO ()
 async channel action = putMVar channel =<< evaluate =<< action
 
-noop :: IO ()
-noop = return ()
-
-printHelp :: IO ()
-printHelp = do
+printHelp :: AnimMonad a ()
+printHelp = liftIO $ do
+  clearScreen >> resetCursor
   putStrLn $ unlines [ "AOC animator deluxe keyboard shortcuts."
                      , "(press any key to continue)"
                      , ""
@@ -151,34 +188,65 @@ printHelp = do
                      , "q       quit"
                      ]
   void getChar
-  clearScreen >> resetCursor
 
-processActions :: AnimState a -> IO (AnimState a)
-processActions animState = peekActions >>= foldM exec animState
-  where exec as Faster     = return $ as { currentDelay = faster $ currentDelay as }
-        exec as Slower     = return $ as { currentDelay = slower $ currentDelay as }
-        exec as ResetSpeed = return $ as { currentDelay = originalDelay as }
-        exec as Pause      = return $ as { isPaused     = not $ isPaused as }
-        exec as Quit       = return $ as { canContinue  = False }
-        exec as Help       = printHelp >> return as
-        exec as _          = return as
-        faster d = max  100 $ round $ fromIntegral d * 0.80
-        slower d = min 2000 $ round $ fromIntegral d * 1.25
+renderFrame :: AnimMonad a ()
+renderFrame = do
+  (logs, a) <- getCurrent
+  frameData <- ($ a) <$> asks renderFun
+  paused    <- gets isPaused
+  delay     <- gets currentDelay
+  n         <- gets frameCount
+  liftIO $ do
+    clearScreen
+    resetCursor
+    let pl = if paused then " (paused)" else ""
+    printf "Delay: %dms%s\nFrame: #%d\n%s%s" delay pl n frameData $ unlines logs
+
+processActions :: [Action] -> AnimMonad a ()
+processActions = mapM_ exec
+  where
+    exec Pause      = modify $ \s -> s { isPaused = not $ isPaused s }
+    exec Faster     = modify $ \s -> s { currentDelay = faster $ currentDelay s }
+    exec Slower     = modify $ \s -> s { currentDelay = slower $ currentDelay s }
+    exec ResetSpeed = do
+      value <- asks origDelay
+      modify $ \s -> s { currentDelay = value }
+    exec Restart    = restart
+    exec PrevFrame  = whenM (gets isPaused) $ stepBackwards >> renderFrame
+    exec NextFrame  = whenM (gets isPaused) $ stepForwards  >> renderFrame
+    exec Help       = printHelp >> renderFrame
+    exec Quit       = modify $ \s -> s { canContinue = False }
+    faster d = max  100 $ round $ fromIntegral d * 0.80
+    slower d = min 2000 $ round $ fromIntegral d * 1.25
 
 animate :: Milliseconds -> RenderFun a -> UpdateFun a -> a -> IO ()
 animate delay render step initialState = do
   hSetBuffering stdin NoBuffering
   hSetEcho stdout False
-  clearScreen
-  channel <- newEmptyMVar
-  run channel (0 :: Int) $ mkAnimState delay initialState
-  where run channel !n !state = do
-          clearScreen >> resetCursor
-          newState <- processActions state
-          printf "Delay: %dms\nFrame: #%d\n" (currentDelay newState) n
-          putStr $ render $ getCurrent newState
-          when (canContinue newState) $ do
-            forkIO $ async channel $ step $ getCurrent newState
-            sleep $ currentDelay newState
-            whenM (isEmptyMVar channel) $ putStrLn "(waiting...)"
-            whenJustM (takeMVar channel) $ run channel (n+1) . insertState newState
+  let aas = mkAnimState delay initialState
+      aap = AP render step delay initialState
+  channel <- liftIO newEmptyMVar
+  flip evalStateT aas $ flip runReaderT aap $ run channel
+  where
+    run channel = do
+      processActions =<< liftIO peekActions
+      renderFrame
+      whileM (gets isPaused) $ do
+        liftIO $ hWaitForInput stdin (-1)
+        processActions =<< liftIO peekActions
+      whenM (gets canContinue) $ do
+        i <- gets currentIndex
+        if i == 0
+        then do
+          f <- asks updateFun
+          a <- snd <$> getCurrent
+          liftIO $ forkIO $ async channel $ f a
+          liftIO . sleep =<< gets currentDelay
+          liftIO $ whenM (isEmptyMVar channel) $ putStrLn "(waiting...)"
+          whenJustM (liftIO $ takeMVar channel) $ \s -> do
+            appendState s
+            run channel
+        else do
+          stepForwards
+          liftIO . sleep =<< gets currentDelay
+          run channel
