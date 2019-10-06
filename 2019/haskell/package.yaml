@@ -17,6 +17,8 @@ dependencies:
   - deepseq
   - extra
   - filepath
+  - lifted-base
+  - monad-control
   - monad-loops
   - mtl
   - parallel
@@ -28,6 +30,7 @@ dependencies:
   - tasty
   - tasty-hunit
   - tasty-quickcheck
+  - transformers-base
   - vector
 
 library:

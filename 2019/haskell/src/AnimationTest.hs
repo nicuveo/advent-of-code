@@ -38,13 +38,11 @@ randomPicture = do
                                  ]
                         | (lc, rc) <- lineColors
                         ]
-  return (["Seed used: " ++ show rs], result)
+  return (["StdGen: '" ++ show rs ++ "'"], result)
 
 nextRandomPicture :: String -> IO (Maybe (Logs, String))
 nextRandomPicture = const $ Just <$> randomPicture
 
 
 main :: IO ()
-main = do
-  (_, p) <- randomPicture
-  animate defaultDelay id nextRandomPicture p
+main = animate defaultDelay id nextRandomPicture =<< randomPicture

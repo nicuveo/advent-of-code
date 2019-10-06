@@ -1,3 +1,6 @@
+{-# LANGUAGE ConstraintKinds  #-}
+{-# LANGUAGE FlexibleContexts #-}
+
 module AOC.Debug.Animate where
 
 
@@ -5,12 +8,14 @@ module AOC.Debug.Animate where
 -- imports
 
 import           Control.Applicative
-import           Control.Concurrent
-import           Control.Exception
-import           Control.Monad.Extra        hiding (whileM)
-import           Control.Monad.Loops        (whileM)
+import           Control.Concurrent.Lifted
+import           Control.Exception.Lifted
+import           Control.Monad.Base
+import           Control.Monad.Extra         hiding (whileM)
+import           Control.Monad.Loops         (whileM)
 import           Control.Monad.Reader
 import           Control.Monad.State.Strict
+import           Control.Monad.Trans.Control
 import           Data.Maybe
 import           Data.Word
 import           System.IO
@@ -67,13 +72,13 @@ defaultDelay = 1000
 type Logs = [String]
 
 type RenderFun a = a -> String
-type UpdateFun a = a -> IO (Maybe (Logs, a))
+type UpdateFun m a = a -> m (Maybe (Logs, a))
 
-data AnimParams a = AP { renderFun :: RenderFun a
-                       , updateFun :: UpdateFun a
-                       , origDelay :: Int
-                       , origState :: a
-                       }
+data AnimParams m a = AP { renderFun :: RenderFun a
+                         , updateFun :: UpdateFun m a
+                         , origDelay :: Int
+                         , origState :: (Logs, a)
+                         }
 
 data AnimState a = AS { currentDelay :: Milliseconds
                       , stateHistory :: [(Logs, a)]
@@ -83,21 +88,22 @@ data AnimState a = AS { currentDelay :: Milliseconds
                       , frameCount   :: Int
                       }
 
-type AnimMonad a = ReaderT (AnimParams a) (StateT (AnimState a) IO)
+type AnimMonad m a = ReaderT (AnimParams m a) (StateT (AnimState a) m)
+type AnimIO m a = (MonadBaseControl IO m, MonadIO m, MonadBase m m)
 
 
 
 -- animation functions
 
-mkAnimState :: Milliseconds -> a -> AnimState a
-mkAnimState d a = AS d [([], a)] 0 False True 0
+mkAnimState :: Milliseconds -> (Logs, a) -> AnimState a
+mkAnimState d la = AS d [la] 0 False True 0
 
-getCurrent :: AnimMonad a (Logs, a)
+getCurrent :: Monad m => AnimMonad m a (Logs, a)
 getCurrent = liftA2 (!!) hist index
   where hist  = gets stateHistory
         index = gets currentIndex
 
-appendState :: (Logs, a) -> AnimMonad a ()
+appendState :: Monad m => (Logs, a) -> AnimMonad m a ()
 appendState a = do
   index <- gets currentIndex
   assert (index == 0) $ modify $ \s ->
@@ -105,21 +111,21 @@ appendState a = do
       , stateHistory = a : take 20 (stateHistory s)
       }
 
-stepForwards :: AnimMonad a ()
+stepForwards :: (MonadBase m m, Monad m) => AnimMonad m a ()
 stepForwards = do
   index <- gets currentIndex
   case index of
     0 -> do
       f <- asks updateFun
       a <- snd <$> getCurrent
-      r <- liftIO $ f a
+      r <- liftBase $ f a
       whenJust r appendState
     _ -> modify $ \s ->
       s { frameCount   = frameCount   s + 1
         , currentIndex = currentIndex s - 1
         }
 
-stepBackwards :: AnimMonad a ()
+stepBackwards :: Monad m => AnimMonad m a ()
 stepBackwards = do
   index <- gets currentIndex
   limit <- length <$> gets stateHistory
@@ -128,7 +134,7 @@ stepBackwards = do
       , currentIndex = currentIndex s + 1
       }
 
-restart :: AnimMonad a ()
+restart :: Monad m => AnimMonad m a ()
 restart = do
   d <- asks origDelay
   a <- asks origState
@@ -168,10 +174,10 @@ peekActions = fmap catMaybes $ whileM (hReady stdin) $ do
 
 -- animate
 
-async :: MVar a -> IO a -> IO ()
+async :: MonadBaseControl IO m => MVar x -> m x -> m ()
 async channel action = putMVar channel =<< evaluate =<< action
 
-printHelp :: AnimMonad a ()
+printHelp :: MonadIO m => AnimMonad m a ()
 printHelp = liftIO $ do
   clearScreen >> resetCursor
   putStrLn $ unlines [ "AOC animator deluxe keyboard shortcuts."
@@ -189,7 +195,7 @@ printHelp = liftIO $ do
                      ]
   void getChar
 
-renderFrame :: AnimMonad a ()
+renderFrame :: MonadIO m => AnimMonad m a ()
 renderFrame = do
   (logs, a) <- getCurrent
   frameData <- ($ a) <$> asks renderFun
@@ -202,7 +208,7 @@ renderFrame = do
     let pl = if paused then " (paused)" else ""
     printf "Delay: %dms%s\nFrame: #%d\n%s%s" delay pl n frameData $ unlines logs
 
-processActions :: [Action] -> AnimMonad a ()
+processActions :: AnimIO m a => [Action] -> AnimMonad m a ()
 processActions = mapM_ exec
   where
     exec Pause      = modify $ \s -> s { isPaused = not $ isPaused s }
@@ -219,15 +225,18 @@ processActions = mapM_ exec
     faster d = max  100 $ round $ fromIntegral d * 0.80
     slower d = min 2000 $ round $ fromIntegral d * 1.25
 
-animate :: Milliseconds -> RenderFun a -> UpdateFun a -> a -> IO ()
+
+animate :: AnimIO m a => Milliseconds -> RenderFun a -> UpdateFun m a -> (Logs, a) -> m ()
 animate delay render step initialState = do
-  hSetBuffering stdin NoBuffering
-  hSetEcho stdout False
-  let aas = mkAnimState delay initialState
-      aap = AP render step delay initialState
+  liftIO $ do
+    hSetBuffering stdin NoBuffering
+    hSetEcho stdout False
+  let animS = mkAnimState delay initialState
+      animP = AP render step delay initialState
   channel <- liftIO newEmptyMVar
-  flip evalStateT aas $ flip runReaderT aap $ run channel
+  flip evalStateT animS $ flip runReaderT animP $ run channel
   where
+    run :: AnimIO m a => MVar (Maybe (Logs, a)) -> AnimMonad m a ()
     run channel = do
       processActions =<< liftIO peekActions
       renderFrame
@@ -238,9 +247,8 @@ animate delay render step initialState = do
         i <- gets currentIndex
         if i == 0
         then do
-          f <- asks updateFun
-          a <- snd <$> getCurrent
-          liftIO $ forkIO $ async channel $ f a
+          a <- getAction
+          liftBase $ fork $ async channel a
           liftIO . sleep =<< gets currentDelay
           liftIO $ whenM (isEmptyMVar channel) $ putStrLn "(waiting...)"
           whenJustM (liftIO $ takeMVar channel) $ \s -> do
@@ -250,3 +258,9 @@ animate delay render step initialState = do
           stepForwards
           liftIO . sleep =<< gets currentDelay
           run channel
+
+getAction :: Monad m => AnimMonad m a (m (Maybe (Logs, a)))
+getAction = do
+  f <- asks updateFun
+  a <- snd <$> getCurrent
+  return $ f a
