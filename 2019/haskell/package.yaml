@@ -4,7 +4,6 @@ ghc-options:
   - -Wall
   - -fwarn-tabs
   - -fno-warn-type-defaults
-  - -fno-warn-unused-do-bind
 dependencies:
   - base >= 4.7 && < 5
   - MissingH
@@ -14,22 +13,18 @@ dependencies:
   - bytestring
   - containers
   - cryptohash-md5
-  - deepseq
   - extra
   - filepath
-  - lifted-base
-  - monad-control
   - monad-loops
   - mtl
-  - parallel
   - parsec
-  - pqueue
   - random
   - safe
   - split
   - tasty
   - tasty-hunit
   - tasty-quickcheck
+  - time
   - transformers-base
   - vector
 
@@ -41,6 +36,7 @@ _exe: &exe
     - -O2
     - -threaded -rtsopts -with-rtsopts=-N4
     - -fno-warn-unused-top-binds
+    - -fno-warn-unused-do-bind
   dependencies: aoc2019
 
 executables:
