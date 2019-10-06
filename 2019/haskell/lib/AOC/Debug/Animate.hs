@@ -9,7 +9,7 @@ module AOC.Debug.Animate where
 import           Control.Applicative
 import           Control.Exception
 import           Control.Monad.Extra        hiding (whileM)
-import           Control.Monad.Loops        (whileM)
+import           Control.Monad.Loops        (whileM, whileM_)
 import           Control.Monad.Reader
 import           Control.Monad.State.Strict
 import           Data.Maybe
@@ -264,7 +264,7 @@ animate delay render step initialState = do
       frameStart <- liftIO getCurrentTime
       computeNext
       processActions
-      void $ whileM (gets canContinue &&^ (gets isPaused ||^ canWait frameStart)) $ do
+      whileM_ (gets canContinue &&^ (gets isPaused ||^ canWait frameStart)) $ do
         waitTime <- ifM (gets isPaused) (return (-1)) $ timeRemaining frameStart
         whenM (liftIO $ hWaitForInput stdin waitTime) processActions
       whenM (gets canContinue) $ do
