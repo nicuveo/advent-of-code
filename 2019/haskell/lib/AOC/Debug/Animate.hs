@@ -257,7 +257,7 @@ animate delay render step initialState = do
   is <- initialState
   let animS = mkAnimState delay is
       animP = AP render step delay initialState
-  flip evalStateT animS $ runReaderT run animP
+  run `runReaderT` animP `evalStateT` animS
   where
     run = do
       renderFrame
