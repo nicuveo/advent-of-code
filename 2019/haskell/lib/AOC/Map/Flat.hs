@@ -50,14 +50,27 @@ g !? p
   | inBounds g p = Just $ g ! p
   | otherwise    = Nothing
 
+mapYs :: FlatMap a -> [Int]
+mapYs m = [0 .. fmapHeight m - 1]
+
+mapXs :: FlatMap a -> [Int]
+mapXs m = [0 .. fmapWidth m - 1]
+
 
 
 -- update
 
-updateMap :: V.Unbox a => (V.Vector a -> V.Vector a) -> FlatMap a -> FlatMap a
-updateMap f m@(FlatMap v _ _) = m { fmapData = assert (v `sameLength` w) w }
+updateWith :: (V.Unbox a, V.Unbox b) => (V.Vector a -> V.Vector b) -> FlatMap a -> FlatMap b
+updateWith f m@(FlatMap v _ _) = m { fmapData = assert (v `sameLength` w) w }
   where w = f v
         sameLength = (==) `on` V.length
+
+
+
+-- mapping
+
+pmap :: (V.Unbox a, V.Unbox b) => (Point -> a -> b) -> FlatMap a -> FlatMap b
+pmap f g = updateWith (V.imap $ f . fromIndex g) g
 
 
 
@@ -73,11 +86,17 @@ inBounds m (Point y x) = and [ y >= 0, y < fmapHeight m
                              , x >= 0, x < fmapWidth  m
                              ]
 
-fourMapNeighboursOf :: FlatMap a -> Point -> [Point]
-fourMapNeighboursOf f = filter (inBounds f) . fourNeighboursOf
+fourNeighbouringPointsOf :: FlatMap a -> Point -> [Point]
+fourNeighbouringPointsOf f = filter (inBounds f) . fourNeighboursOf
 
-eightMapNeighboursOf :: FlatMap a -> Point -> [Point]
-eightMapNeighboursOf f = filter (inBounds f) . eightNeighboursOf
+eightNeighbouringPointsOf :: FlatMap a -> Point -> [Point]
+eightNeighbouringPointsOf f = filter (inBounds f) . eightNeighboursOf
+
+fourMapNeighboursOf :: V.Unbox a => FlatMap a -> Point -> [a]
+fourMapNeighboursOf f = map (f !) . fourNeighbouringPointsOf f
+
+eightMapNeighboursOf :: V.Unbox a => FlatMap a -> Point -> [a]
+eightMapNeighboursOf f = map (f !) . eightNeighbouringPointsOf f
 
 
 
