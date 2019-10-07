@@ -17,12 +17,7 @@ mkGame = makeFlatMapFromList w h . take (w*h) . randoms
         h = 50
 
 display :: GameOfLife -> String
-display g =
-  unlines [ concat [ bool "  " "##" $ g ! Point y x
-                   | x <- mapXs g
-                   ]
-          | y <- mapYs g
-          ]
+display = displayWith $ \_ -> bool "  " "##"
 
 step :: GameOfLife -> GameOfLife
 step g = flip pmap g $ \p b -> status b $ countTrue $ eightMapNeighboursOf g p

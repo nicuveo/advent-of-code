@@ -105,3 +105,15 @@ toIndex m (Point y x) = y * fmapWidth m + x
 
 fromIndex :: FlatMap a -> Index -> Point
 fromIndex m i = uncurry Point $ divMod i $ fmapWidth m
+
+
+
+-- display
+
+displayWith :: V.Unbox a => (Point -> a -> String) -> FlatMap a -> String
+displayWith f g =
+  unlines [ concat [ let p = Point y x in f p $ g ! p
+                   | x <- mapXs g
+                   ]
+          | y <- mapYs g
+          ]
