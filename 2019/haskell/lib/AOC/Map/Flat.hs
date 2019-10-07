@@ -5,7 +5,6 @@ module AOC.Map.Flat where
 -- imports
 
 import           Control.Exception
-import           Data.Function       (on)
 import qualified Data.Vector.Unboxed as V
 import           Safe
 
@@ -61,9 +60,8 @@ mapXs m = [0 .. fmapWidth m - 1]
 -- update
 
 updateWith :: (V.Unbox a, V.Unbox b) => (V.Vector a -> V.Vector b) -> FlatMap a -> FlatMap b
-updateWith f m@(FlatMap v _ _) = m { fmapData = assert (v `sameLength` w) w }
+updateWith f m@(FlatMap v _ _) = m { fmapData = assert (V.length v == V.length w) w }
   where w = f v
-        sameLength = (==) `on` V.length
 
 
 
