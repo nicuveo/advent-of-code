@@ -43,7 +43,8 @@ defaultDelay = 1000
 -- animation data
 
 type Logs          = [String]
-type RenderFun a   = a -> String
+type FrameData     = String
+type RenderFun a   = a -> FrameData
 type UpdateFun a m = a -> m (Maybe (Logs, a))
 
 data AnimParams a m = AP { renderFun :: RenderFun a
@@ -53,15 +54,16 @@ data AnimParams a m = AP { renderFun :: RenderFun a
                          }
 
 data AnimState a = AS { currentDelay :: Milliseconds
-                      , stateHistory :: [(Logs, a)]
+                      , stateHistory :: [(Logs, FrameData)]
                       , currentIndex :: Int
                       , isPaused     :: Bool
                       , canContinue  :: Bool
                       , frameCount   :: Int
+                      , lastState    :: a
                       }
 
-mkAnimState :: Milliseconds -> (Logs, a) -> AnimState a
-mkAnimState d la = AS d [la] 0 False True 0
+mkAnimState :: RenderFun a -> Milliseconds -> (Logs, a) -> AnimState a
+mkAnimState r d (l, a) = AS d [(l, r a)] 0 False True 0 a
 
 type MonadAnim a m = ReaderT (AnimParams a m) (StateT (AnimState a) m)
 
@@ -72,7 +74,7 @@ liftAnim = lift . lift
 
 -- animation functions
 
-getCurrent :: Monad m => MonadAnim a m (Logs, a)
+getCurrent :: Monad m => MonadAnim a m (Logs, FrameData)
 getCurrent = liftA2 (!!) hist index
   where hist  = gets stateHistory
         index = gets currentIndex
@@ -81,14 +83,16 @@ computeNext :: Monad m => MonadAnim a m ()
 computeNext = do
   index <- gets currentIndex
   when (index == 0) $ whenJustM doCompute appendState
-  where doCompute = liftAnim =<< asks updateFun <*> fmap snd getCurrent
+  where doCompute = liftAnim =<< asks updateFun <*> gets lastState
 
 appendState :: Monad m => (Logs, a) -> MonadAnim a m ()
-appendState a = do
-  index <- gets currentIndex
+appendState (l, a) = do
+  index  <- gets currentIndex
+  render <- asks renderFun
   assert (index == 0) $ modify $ \s ->
     s { currentIndex = 1
-      , stateHistory = a : take 20 (stateHistory s)
+      , stateHistory = take 21 $! (l, render a) : stateHistory s
+      , lastState    = a
       }
 
 stepForwards :: Monad m => MonadAnim a m ()
@@ -110,10 +114,12 @@ stepBackwards = do
 
 restart :: Monad m => MonadAnim a m ()
 restart = do
-  a <- liftAnim =<< asks origState
-  modify $ \s -> s { stateHistory = [a]
+  (l, a) <- liftAnim =<< asks origState
+  render <- asks renderFun
+  modify $ \s -> s { stateHistory = [(l, render a)]
                    , currentIndex = 0
                    , frameCount   = 0
+                   , lastState    = a
                    }
 
 
@@ -196,7 +202,6 @@ printHelp = liftIO $ do
 renderFrame :: MonadIO m => MonadAnim a m ()
 renderFrame = do
   (logs, a) <- getCurrent
-  frameData <- ($ a) <$> asks renderFun
   paused    <- gets isPaused
   delay     <- gets currentDelay
   n         <- gets frameCount
@@ -204,7 +209,7 @@ renderFrame = do
     clearScreen
     resetCursor
     let pl = if paused then " (paused)" else ""
-    printf "Interval: %dms%s\nFrame: #%d\n%s%s" delay pl n frameData $ unlines logs
+    printf "Interval: %dms%s\nFrame: #%d\n%s%s" delay pl n a $ unlines logs
 
 processActions :: MonadIO m => MonadAnim a m ()
 processActions = mapM_ exec =<< liftIO peekActions
@@ -234,7 +239,7 @@ animate delay render step initialState = do
     hSetBuffering stdin NoBuffering
     hSetEcho stdout False
   is <- initialState
-  let animS = mkAnimState delay is
+  let animS = mkAnimState render delay is
       animP = AP render step delay initialState
   run `runReaderT` animP `evalStateT` animS
   where
