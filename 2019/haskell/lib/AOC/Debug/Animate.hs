@@ -29,6 +29,9 @@ clearScreen = putStr "\ESC[2J"
 resetCursor :: ScreenAction
 resetCursor = putStr "\ESC[;H"
 
+clearAndReset :: ScreenAction
+clearAndReset = clearScreen >> resetCursor
+
 
 
 -- animation delay
@@ -49,6 +52,7 @@ type UpdateFun a m = a -> m (Maybe (Logs, a))
 
 data AnimParams a m = AP { renderFun :: RenderFun a
                          , updateFun :: UpdateFun a m
+                         , clearFun  :: ScreenAction
                          , origDelay :: Int
                          , origState :: m (Logs, a)
                          }
@@ -179,7 +183,7 @@ canWait startTime = do
 
 printHelp :: MonadIO m => MonadAnim a m ()
 printHelp = liftIO $ do
-  clearScreen >> resetCursor
+  clearAndReset
   putStr $ unlines [ "AOC animator deluxe keyboard shortcuts."
                    , ""
                    , "at any time:"
@@ -197,7 +201,7 @@ printHelp = liftIO $ do
                    , ""
                    , "(press any key to continue)"
                    ]
-  void getChar
+  void getChar >> clearScreen
 
 renderFrame :: MonadIO m => MonadAnim a m ()
 renderFrame = do
@@ -205,11 +209,11 @@ renderFrame = do
   paused    <- gets isPaused
   delay     <- gets currentDelay
   n         <- gets frameCount
+  clear     <- asks clearFun
   liftIO $ do
-    clearScreen
-    resetCursor
+    clear
     let pl = if paused then " (paused)" else ""
-    printf "Interval: %dms%s\nFrame: #%d\n%s%s" delay pl n a $ unlines logs
+    printf "Interval: %dms%s                 \nFrame: #%d        \n%s%s" delay pl n a $ unlines logs
 
 processActions :: MonadIO m => MonadAnim a m ()
 processActions = mapM_ exec =<< liftIO peekActions
@@ -233,14 +237,15 @@ processActions = mapM_ exec =<< liftIO peekActions
     exec Help       = printHelp >> renderFrame
     exec Quit       = modify $ \s -> s { canContinue = False }
 
-animate :: MonadIO m => Milliseconds -> RenderFun a -> UpdateFun a m -> m (Logs, a) -> m ()
-animate delay render step initialState = do
+animate :: MonadIO m => Milliseconds -> ScreenAction -> RenderFun a -> UpdateFun a m -> m (Logs, a) -> m ()
+animate delay clear render step initialState = do
   liftIO $ do
     hSetBuffering stdin NoBuffering
     hSetEcho stdout False
+    clearAndReset
   is <- initialState
   let animS = mkAnimState render delay is
-      animP = AP render step delay initialState
+      animP = AP render step clear delay initialState
   run `runReaderT` animP `evalStateT` animS
   where
     run = do

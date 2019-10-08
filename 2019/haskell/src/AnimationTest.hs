@@ -43,4 +43,4 @@ main = do
   let s = return ([], mkGame n)
       r = display
       u = return . Just . ([],) . step
-  animate defaultDelay r u s
+  animate defaultDelay resetCursor r u s
