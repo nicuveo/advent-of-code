@@ -22,7 +22,7 @@ h = 50
 
 
 mkGame :: StdGen -> GameOfLife
-mkGame = makeFlatMapFromList w h . take (w*h) . randoms
+mkGame = fromList w h . take (w*h) . randoms
 
 display :: GameOfLife -> String
 display = displayWith $ \p -> bool "  " $ bgColor white $ fgColor (colorOf p) "▇▇"

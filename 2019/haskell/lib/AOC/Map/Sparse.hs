@@ -5,6 +5,7 @@ module AOC.Map.Sparse where
 -- imports
 
 import qualified Data.Map.Strict as M
+import           Data.Maybe
 import           Safe
 
 import           AOC.Point
@@ -19,16 +20,16 @@ type SparseMap = M.Map Point
 
 -- constructors
 
-makeSparseMapFromList :: Int -> Int -> [a] -> SparseMap a
-makeSparseMapFromList width height raw
+fromList :: Int -> Int -> [a] -> SparseMap a
+fromList width height raw
   | length raw /= width * height = error "makeSparseMapFromList: wrong number of elements"
   | otherwise = M.fromList $ zip indices raw
   where indices = [Point y x | y <- [0..height-1], x <- [0..width-1]]
 
-makeSparseMapFrom2DList :: [[a]] -> SparseMap a
-makeSparseMapFrom2DList lists
+from2DList :: [[a]] -> SparseMap a
+from2DList lists
   | any ((/= width) . length) lists = error "makeSparseMapFrom2DList: not all rows have the same length"
-  | otherwise = makeSparseMapFromList width height $ concat lists
+  | otherwise = fromList width height $ concat lists
   where width  = maybe 0 length $ headMay lists
         height = length lists
 
@@ -41,6 +42,12 @@ makeSparseMapFrom2DList lists
 
 (!?) :: SparseMap a -> Point -> Maybe a
 (!?) = (M.!?)
+
+mapYs :: SparseMap a -> [Int]
+mapYs m = let (a,b) = bounds m in [py a .. py b]
+
+mapXs :: SparseMap a -> [Int]
+mapXs m = let (a,b) = bounds m in [px a .. px b]
 
 
 
@@ -60,8 +67,26 @@ inBounds g (Point y x) = and [ y >= minY , y <= maxY
                              ]
   where (Point minY minX, Point maxY maxX) = bounds g
 
-fourMapNeighboursOf :: SparseMap a -> Point -> [Point]
-fourMapNeighboursOf f = filter (inBounds f) . fourNeighboursOf
+fourNeighbouringPointsOf :: SparseMap a -> Point -> [Point]
+fourNeighbouringPointsOf f = filter (inBounds f) . fourNeighboursOf
 
-eightMapNeighboursOf :: SparseMap a -> Point -> [Point]
-eightMapNeighboursOf f = filter (inBounds f) . eightNeighboursOf
+eightNeighbouringPointsOf :: SparseMap a -> Point -> [Point]
+eightNeighbouringPointsOf f = filter (inBounds f) . eightNeighboursOf
+
+fourMapNeighboursOf :: SparseMap a -> Point -> [a]
+fourMapNeighboursOf f = mapMaybe (f !?) . fourNeighbouringPointsOf f
+
+eightMapNeighboursOf :: SparseMap a -> Point -> [a]
+eightMapNeighboursOf f = mapMaybe (f !?) . eightNeighbouringPointsOf f
+
+
+
+-- display
+
+displayWith :: (Point -> a -> String) -> String -> SparseMap a -> String
+displayWith g e m =
+  unlines [ concat [ let p = Point y x in maybe e (g p) $ m !? p
+                   | x <- mapXs m
+                   ]
+          | y <- mapYs m
+          ]
