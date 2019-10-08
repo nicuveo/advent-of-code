@@ -95,7 +95,7 @@ appendState (l, a) = do
   render <- asks renderFun
   assert (index == 0) $ modify $ \s ->
     s { currentIndex = 1
-      , stateHistory = take 21 $! (l, render a) : stateHistory s
+      , stateHistory = take 101 $! (l, render a) : stateHistory s
       , lastState    = a
       }
 
