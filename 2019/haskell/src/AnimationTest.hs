@@ -1,10 +1,11 @@
 {-# LANGUAGE TupleSections #-}
 
 import           Data.Bool
+import           Data.Ratio
 import           System.Random
 
 import           AOC
-import           AOC.Debug.Animate
+import           AOC.Debug
 import           AOC.Map.Flat
 
 
@@ -17,7 +18,11 @@ mkGame = makeFlatMapFromList w h . take (w*h) . randoms
         h = 50
 
 display :: GameOfLife -> String
-display = displayWith $ \_ -> bool "  " "##"
+display = displayWith $ \p ->  bool "  " $ fgColor (colorOf p) "##"
+  where colorOf (Point y x) =
+          let c1 = interpolate (x % 49) red   yellow
+              c2 = interpolate (x % 49) green blue
+          in interpolate (y % 49) c1 c2
 
 step :: GameOfLife -> GameOfLife
 step g = flip pmap g $ \p b -> status b $ countTrue $ eightMapNeighboursOf g p
