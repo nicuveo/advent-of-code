@@ -14,29 +14,8 @@ import           Control.Monad.Reader
 import           Control.Monad.State.Strict
 import           Data.Maybe
 import           Data.Time.Clock
-import           Data.Word
 import           System.IO
 import           Text.Printf
-
-
-
--- color
-
-data Color = RGB Word8 Word8 Word8
-
-fgColor :: Color -> String -> String
-fgColor (RGB r g b) = printf "\ESC[38;2;%d;%d;%dm%s\ESC[0m" r g b
-
-bgColor :: Color -> String -> String
-bgColor (RGB r g b) = printf "\ESC[48;2;%d;%d;%dm%s\ESC[0m" r g b
-
-red, yellow, green, cyan, blue, magenta :: Color
-red     = RGB 255   0   0
-yellow  = RGB 255 255   0
-green   = RGB   0 255   0
-cyan    = RGB   0 255 255
-blue    = RGB   0   0 255
-magenta = RGB 255   0 255
 
 
 
