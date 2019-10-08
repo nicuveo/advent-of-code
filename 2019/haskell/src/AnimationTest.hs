@@ -12,17 +12,24 @@ import           AOC.Map.Flat
 type GameOfLife = FlatMap Bool
 
 
+tlColor = interpolate (2%3) white red
+trColor = interpolate (2%3) white yellow
+blColor = interpolate (2%3) white green
+brColor = interpolate (2%3) white blue
+
+w = 50
+h = 50
+
+
 mkGame :: StdGen -> GameOfLife
 mkGame = makeFlatMapFromList w h . take (w*h) . randoms
-  where w = 50
-        h = 50
 
 display :: GameOfLife -> String
 display = displayWith $ \p ->  bool "  " $ fgColor (colorOf p) "##"
   where colorOf (Point y x) =
-          let c1 = interpolate (x % 49) red   yellow
-              c2 = interpolate (x % 49) green blue
-          in interpolate (y % 49) c1 c2
+          let c1 = interpolate (x % (w-1)) tlColor trColor
+              c2 = interpolate (x % (w-1)) blColor brColor
+          in interpolate (y % (h-1)) c1 c2
 
 step :: GameOfLife -> GameOfLife
 step g = flip pmap g $ \p b -> status b $ countTrue $ eightMapNeighboursOf g p

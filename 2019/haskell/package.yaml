@@ -35,6 +35,7 @@ _exe: &exe
   ghc-options:
     - -O2
     - -threaded -rtsopts -with-rtsopts=-N4
+    - -fno-warn-missing-signatures
     - -fno-warn-unused-top-binds
     - -fno-warn-unused-do-bind
   dependencies: aoc2019
