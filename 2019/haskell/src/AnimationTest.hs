@@ -25,7 +25,7 @@ mkGame :: StdGen -> GameOfLife
 mkGame = makeFlatMapFromList w h . take (w*h) . randoms
 
 display :: GameOfLife -> String
-display = displayWith $ \p ->  bool "  " $ fgColor (colorOf p) "##"
+display = displayWith $ \p -> bool "  " $ bgColor white $ fgColor (colorOf p) "▇▇"
   where colorOf (Point y x) =
           let c1 = interpolate (x % (w-1)) tlColor trColor
               c2 = interpolate (x % (w-1)) blColor brColor
