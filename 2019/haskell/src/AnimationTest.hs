@@ -40,7 +40,7 @@ step g = flip pmap g $ \p b -> status b $ countTrue $ eightMapNeighboursOf g p
 main :: IO ()
 main = do
   n <- getStdGen
-  let s = return ([], mkGame n)
+  let s = ([], mkGame n)
       r = display
-      u = return . Just . ([],) . step
+      u = Just . ([],) . step
   animate 100 resetCursor r u s
