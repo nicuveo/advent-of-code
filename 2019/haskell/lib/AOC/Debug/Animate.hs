@@ -23,6 +23,9 @@ import           Text.Printf
 
 type ScreenAction = IO ()
 
+clearLine :: ScreenAction
+clearLine = putStr "\ESC[K"
+
 clearScreen :: ScreenAction
 clearScreen = putStr "\ESC[2J"
 
@@ -102,10 +105,11 @@ appendState (l, a) = do
 stepForwards :: Monad m => MonadAnim a m ()
 stepForwards = do
   computeNext
-  modify $ \s ->
-    s { frameCount   = frameCount   s + 1
-      , currentIndex = currentIndex s - 1
-      }
+  whenM ((> 0) <$> gets currentIndex) $
+    modify $ \s ->
+      s { frameCount   = frameCount   s + 1
+        , currentIndex = currentIndex s - 1
+        }
 
 stepBackwards :: Monad m => MonadAnim a m ()
 stepBackwards = do
@@ -213,7 +217,9 @@ renderFrame = do
   liftIO $ do
     clear
     let pl = if paused then " (paused)" else ""
-    printf "Interval: %dms%s                 \nFrame: #%d        \n%s%s" delay pl n a $ unlines logs
+    printf "Interval: %dms%s                 \nFrame: #%d        \n%s" delay pl n a
+    forM_ logs $ \l -> clearLine >> putStrLn l
+    clearLine
 
 processActions :: MonadIO m => MonadAnim a m ()
 processActions = mapM_ exec =<< liftIO peekActions
@@ -237,8 +243,11 @@ processActions = mapM_ exec =<< liftIO peekActions
     exec Help       = printHelp >> renderFrame
     exec Quit       = modify $ \s -> s { canContinue = False }
 
-animate :: MonadIO m => Milliseconds -> ScreenAction -> RenderFun a -> UpdateFun a m -> m (Logs, a) -> m ()
-animate delay clear render step initialState = do
+animate :: Milliseconds -> ScreenAction -> RenderFun a -> (a -> Maybe (Logs, a)) -> (Logs, a) -> IO ()
+animate delay clear render step = animateM delay clear render (return . step) . return
+
+animateM :: MonadIO m => Milliseconds -> ScreenAction -> RenderFun a -> UpdateFun a m -> m (Logs, a) -> m ()
+animateM delay clear render step initialState = do
   liftIO $ do
     hSetBuffering stdin NoBuffering
     hSetEcho stdout False
