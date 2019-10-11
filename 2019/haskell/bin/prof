@@ -1,0 +1,15 @@
+#! /usr/bin/env bash
+
+set -e
+
+exe="$1"; shift
+arg=''
+if [ $# -eq 0 ] ; then
+    arg="../input"
+fi
+
+opts="--executable-profiling --library-profiling"
+
+stack build $opts --ghc-options='-fprof-auto' aoc2019:$exe
+stack exec  $opts $exe -- +RTS -p -RTS "$arg" "$@"
+profiteur $exe.prof
