@@ -16,8 +16,8 @@ distanceMap = [ interpolate (3%4) black red
               , interpolate (3%4) black blue
               ]
 gray = interpolate (1%3) white black
-w = 100
-h = 50
+w = 53
+h = 53
 
 
 mkMaze :: StdGen -> Maze
@@ -67,9 +67,7 @@ testMaze = from2DList [ "        "
 
 main :: IO ()
 main = do
-  print distanceMap
-  n <- getStdGen
-  let m = mkMaze n
+  let m = mkMaze $ mkStdGen 42
       s = head $ filter (\p -> m ! p /= '#') $ allPoints m
       e = last $ filter (\p -> m ! p /= '#') $ allPoints m
       z = mkPFState (neighbours m) (heuristic e) s e
