@@ -16,6 +16,9 @@ import           Text.Printf
 
 data Color = RGB Word8 Word8 Word8
 
+instance Show Color where
+  show = flip bgColor "  "
+
 fgColor :: Color -> String -> String
 fgColor (RGB r g b) = printf "\ESC[38;2;%d;%d;%dm%s\ESC[0m" r g b
 
@@ -43,3 +46,11 @@ interpolate w (RGB r1 g1 b1) (RGB r2 g2 b2) = RGB r g b
   where r = round $ w * fromIntegral r2 + (1-w) * fromIntegral r1
         g = round $ w * fromIntegral g2 + (1-w) * fromIntegral g1
         b = round $ w * fromIntegral b2 + (1-w) * fromIntegral b1
+
+interpolateN :: [Color] -> Weight -> Color
+interpolateN l w = if b == n
+                   then last l
+                   else interpolate (w * r n - r b) (l !! b) (l !! succ b)
+  where n = length l - 1
+        b = floor $ w * r n
+        r = (%1)
