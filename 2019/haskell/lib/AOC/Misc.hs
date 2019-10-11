@@ -14,8 +14,8 @@ infixr 8 ...
 
 -- other useful combinators
 
-(<.) :: (b -> a -> c) -> (a -> b) -> a -> c
-(<.) = (<*>) . flip
+(<.) :: (a -> b) -> (b -> a -> c) -> a -> c
+(<.) = (>>=)
 
 (.>) :: (a -> b -> c) -> (a -> b) -> a -> c
 (.>) = (<*>)
