@@ -55,6 +55,9 @@ mapYs m = [0 .. fmapHeight m - 1]
 mapXs :: FlatMap a -> [Int]
 mapXs m = [0 .. fmapWidth m - 1]
 
+allPoints :: FlatMap a -> [Point]
+allPoints m = Point <$> mapYs m <*> mapXs m
+
 
 
 -- update
