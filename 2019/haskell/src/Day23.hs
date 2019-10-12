@@ -1,5 +1,10 @@
 -- import
 
+import           Data.Function (on)
+import           Data.List
+import           Data.Maybe
+import           Text.Parsec
+
 import           AOC
 
 
@@ -9,8 +14,9 @@ import           AOC
 type Input = String
 
 parseInput :: String -> Input
-parseInput = parseWith line
-  where line = undefined
+parseInput = map parseLine . lines
+  where parseLine = parseWith line
+        line = undefined
 
 
 
@@ -18,9 +24,11 @@ parseInput = parseWith line
 
 part1 :: Input -> String
 part1 = undefined
+  where f = undefined
 
 part2 :: Input -> String
 part2 = undefined
+  where f = undefined
 
 
 
