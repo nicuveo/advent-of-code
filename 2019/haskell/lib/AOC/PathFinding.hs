@@ -105,7 +105,7 @@ pfStep !s
   | (Cell (_, c, a), q') <- Q.deleteFindMin $ pfQ s =
       if a == pfE s
       then s { pfQ = Q.empty }
-      else skipToNext $ L.foldr (insertElt a c) (s { pfQ = q' }) $ pfN s a
+      else skipToNext $ L.foldl' (insertElt a c) (s { pfQ = q' }) $ pfN s a
   where skipToNext st = st { pfQ = Q.dropWhile (shouldIgnore st) $ pfQ st }
         shouldIgnore st (Cell (_, c, a)) = c > snd (pfP st ! a)
 
@@ -123,8 +123,8 @@ pfPath s
 
 -- internal helpers
 
-insertElt :: Ord a => a -> Int -> (Int, a) -> PFState a -> PFState a
-insertElt parent cost (distance, neighb) st
+insertElt :: Ord a => a -> Int -> PFState a -> (Int, a) -> PFState a
+insertElt parent cost st (distance, neighb)
   | maybe True (\(_,c) -> neighbCost < c) $ pfP st !? neighb =
       st { pfQ = Q.insert neighbCell $ pfQ st
          , pfP = M.insert neighb (parent, neighbCost) $ pfP st
