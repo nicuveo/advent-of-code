@@ -1,5 +1,4 @@
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE MultiWayIf   #-}
 
 module AOC.PathFinding ( PFState
                        , mkPFState
@@ -57,12 +56,12 @@ cellValue (Cell (_, _, a)) = a
 
 -- path finder state
 
-data PFState a = PFS { pfN :: a -> [(Int, a)]
-                     , pfH :: a -> Int
-                     , pfS :: a
-                     , pfE :: a
-                     , pfQ :: Q.MinQueue (Cell a)
-                     , pfP :: M.Map a (a, Int)
+data PFState a = PFS { pfN :: a -> [(Int, a)]     -- outward edges with cost
+                     , pfH :: a -> Int            -- heuristic function
+                     , pfS :: a                   -- start
+                     , pfE :: a                   -- end
+                     , pfQ :: Q.MinQueue (Cell a) -- internal queue of cells
+                     , pfP :: M.Map a (a, Int)    -- cell' parent & cost
                      }
 
 
@@ -104,27 +103,37 @@ pfStep :: Ord a => PFState a -> PFState a
 pfStep !s
   | pfFinished s = s
   | (Cell (_, c, a), q') <- Q.deleteFindMin $ pfQ s =
-      if | a == pfE s -> s { pfQ = Q.empty }
-         | otherwise  -> L.foldr (insertElt a c) (s { pfQ = q' }) $ pfN s a
-  where insertElt parent cost (distance, neighb) st
-          | maybe True ((neighbCost <) . snd) $ pfP st !? neighb =
-              st { pfQ = Q.insert (Cell ( neighbCost + pfH st neighb
-                                        , neighbCost
-                                        , neighb))
-                         $ Q.filter ((/= neighb) . cellValue)
-                         $ pfQ st
-                 , pfP = M.insert neighb (parent, neighbCost) $ pfP st
-                 }
-          | otherwise = st
-          where neighbCost = cost + distance
+      if a == pfE s
+      then s { pfQ = Q.empty }
+      else skipToNext $ L.foldr (insertElt a c) (s { pfQ = q' }) $ pfN s a
+  where skipToNext st = st { pfQ = Q.dropWhile (shouldIgnore st) $ pfQ st }
+        shouldIgnore st (Cell (_, c, a)) = c > snd (pfP st ! a)
 
 pfPath :: Ord a => PFState a -> [(a, Int)]
 pfPath s
   | pfFound s = fill (pfEnd s) []
   | otherwise = []
-  where fill cell path
-          | cell == pfS s         =          (cell, 0) : path
-          | (p,c) <- pfP s ! cell = fill p $ (cell, c) : path
+  where fill cell path = if cell == pfS s
+                         then path'
+                         else fill p path'
+          where (p,c) = pfP s ! cell
+                path' = (cell, c) : path
+
+
+
+-- internal helpers
+
+insertElt :: Ord a => a -> Int -> (Int, a) -> PFState a -> PFState a
+insertElt parent cost (distance, neighb) st
+  | maybe True (\(_,c) -> neighbCost < c) $ pfP st !? neighb =
+      st { pfQ = Q.insert neighbCell $ pfQ st
+         , pfP = M.insert neighb (parent, neighbCost) $ pfP st
+         }
+  | otherwise = st
+  where neighbCost = cost + distance
+        neighbCell = Cell ( neighbCost + pfH st neighb
+                          , neighbCost
+                          , neighb)
 
 
 
