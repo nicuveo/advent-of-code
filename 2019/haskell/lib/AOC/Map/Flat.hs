@@ -27,12 +27,12 @@ type Index = Int
 
 fromList :: V.Unbox a => Int -> Int -> [a] -> FlatMap a
 fromList width height raw
-  | length raw /= width * height = error "makeFlatMapFromList: wrong number of elements"
+  | length raw /= width * height = error "fromList: wrong number of elements"
   | otherwise = FlatMap (V.fromList raw) width height
 
 from2DList :: V.Unbox a => [[a]] -> FlatMap a
 from2DList lists
-  | any ((/= width) . length) lists = error "makeFlatMapFrom2DList: not all rows have the same length"
+  | any ((/= width) . length) lists = error "from2DList: not all rows have the same length"
   | otherwise = FlatMap (V.fromList $ concat lists) width height
   where width  = maybe 0 length $ headMay lists
         height = length lists

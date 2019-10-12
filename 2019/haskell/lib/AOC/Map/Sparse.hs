@@ -22,13 +22,13 @@ type SparseMap = M.Map Point
 
 fromList :: Int -> Int -> [a] -> SparseMap a
 fromList width height raw
-  | length raw /= width * height = error "makeSparseMapFromList: wrong number of elements"
+  | length raw /= width * height = error "fromList: wrong number of elements"
   | otherwise = M.fromList $ zip indices raw
   where indices = [Point y x | y <- [0..height-1], x <- [0..width-1]]
 
 from2DList :: [[a]] -> SparseMap a
 from2DList lists
-  | any ((/= width) . length) lists = error "makeSparseMapFrom2DList: not all rows have the same length"
+  | any ((/= width) . length) lists = error "from2DList: not all rows have the same length"
   | otherwise = fromList width height $ concat lists
   where width  = maybe 0 length $ headMay lists
         height = length lists
