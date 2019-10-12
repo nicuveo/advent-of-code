@@ -67,7 +67,8 @@ testMaze = from2DList [ "        "
 
 main :: IO ()
 main = do
-  let m = mkMaze $ mkStdGen 42
+  n <- getStdGen
+  let m = mkMaze n
       s = head $ filter (\p -> m ! p /= '#') $ allPoints m
       e = last $ filter (\p -> m ! p /= '#') $ allPoints m
       z = mkPFState (neighbours m) (heuristic e) s e
