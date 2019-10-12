@@ -49,6 +49,9 @@ mapYs m = let (a,b) = bounds m in [py a .. py b]
 mapXs :: SparseMap a -> [Int]
 mapXs m = let (a,b) = bounds m in [px a .. px b]
 
+allPoints :: SparseMap a -> [Point]
+allPoints m = Point <$> mapYs m <*> mapXs m
+
 
 
 -- boundary checking
