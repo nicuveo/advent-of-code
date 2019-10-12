@@ -1,1 +1,1 @@
-((nil . ((compile-command . "hlint lib src; GHCOPTS='-Werror' ./bin/run day01"))))
+((nil . ((compile-command . "hlint lib src; ./bin/run day01"))))
