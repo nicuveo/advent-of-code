@@ -35,6 +35,38 @@ instance Num Point where
 
 
 
+-- cardinal coordinates
+
+data Direction = N | NE | E | SE | S | SW | W | NW
+  deriving (Show, Eq, Bounded, Enum)
+
+directionVector :: Direction -> Vector
+directionVector cd = case cd of
+                      N  -> Point u 0
+                      NE -> Point u r
+                      E  -> Point 0 r
+                      SE -> Point d r
+                      S  -> Point d 0
+                      SW -> Point d l
+                      W  -> Point 0 l
+                      NW -> Point u l
+  where u = -1
+        d =  1
+        l = -1
+        r =  1
+
+
+
+-- rotation
+
+rotate90R :: Vector -> Vector
+rotate90R (Point y x) = Point x (-y)
+
+rotate90L :: Vector -> Vector
+rotate90L (Point y x) = Point (-x) y
+
+
+
 -- other operators
 
 (.*) :: Int -> Vector -> Vector
