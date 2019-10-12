@@ -13,6 +13,15 @@ import qualified Data.Map.Lazy          as M
 
 -- functions
 
+findLoop :: Ord a => [a] -> (Int, [a])
+findLoop values = run M.empty 0 values
+  where run _ _ [] = error "findLoop: data exhausted, no loop found"
+        run history !n (a:l) =
+          case history M.!? a of
+            Just start -> (start, take (n-start) $ drop start values)
+            Nothing    -> run (M.insert a n history) (n+1) l
+
+
 findCycle :: Ord a => (a -> a) -> a -> (Int, [a])
 findCycle f = runIdentity . findCycleM (return . f)
 
