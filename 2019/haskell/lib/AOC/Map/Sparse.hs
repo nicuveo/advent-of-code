@@ -86,9 +86,9 @@ eightMapNeighboursOf f = mapMaybe (f !?) . eightNeighbouringPointsOf f
 
 -- display
 
-displayWith :: (Point -> a -> String) -> String -> SparseMap a -> String
-displayWith g e m =
-  unlines [ concat [ let p = Point y x in maybe e (g p) $ m !? p
+displayWith :: (Point -> Maybe a -> String) -> SparseMap a -> String
+displayWith g m =
+  unlines [ concat [ let p = Point y x in g p $ m !? p
                    | x <- mapXs m
                    ]
           | y <- mapYs m
