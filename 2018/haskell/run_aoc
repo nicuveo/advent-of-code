@@ -2,5 +2,5 @@
 
 set -e
 
-ulimit -v 3145728 -l 3145728 -m 3145728  # -v 6291456 -l 6291456 -m 6291456
+ulimit -v 6000000 -m 6000000
 stack exec aoc2018 -- ../input "$@"
