@@ -4,6 +4,7 @@ set -e
 
 if [ $# -ne 2 ]; then
     echo "usage: download_input year day"
+    exit 1
 fi
 
 base=$(dirname $0)
