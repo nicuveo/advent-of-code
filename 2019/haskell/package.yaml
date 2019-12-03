@@ -40,6 +40,9 @@ _exe: &exe
     - -fno-warn-missing-signatures
     - -fno-warn-unused-top-binds
     - -fno-warn-unused-do-bind
+  source-dirs:
+    - .
+    - src/common
   dependencies: aoc2019
 
 executables:
