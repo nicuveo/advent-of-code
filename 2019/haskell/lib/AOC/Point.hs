@@ -30,7 +30,7 @@ instance Num Point where
   abs    (Point y x) = Point (abs    y) (abs    x)
   negate (Point y x) = Point (negate y) (negate x)
   signum (Point y x) = Point (signum y) (signum x)
-  fromInteger x = Point 0 $ fromInteger x
+  fromInteger _ = error "can't implictly convert int to vector"
   (*) = error "tried to multiply two 2D vectors"
 
 
