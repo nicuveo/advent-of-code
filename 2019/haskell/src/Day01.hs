@@ -1,34 +1,28 @@
 -- import
 
-import           Data.Function (on)
-import           Data.List
-import           Data.Maybe
-import           Text.Parsec
-
 import           AOC
 
 
 
 -- input
 
-type Input = String
+type Input = [Int]
 
 parseInput :: String -> Input
-parseInput = map parseLine . lines
-  where parseLine = parseWith line
-        line = undefined
+parseInput = map read . lines
 
 
 
 -- solution
 
-part1 :: Input -> String
-part1 = undefined
-  where f = undefined
+part1 :: Input -> Int
+part1 = sum . map fuelRequired
 
-part2 :: Input -> String
-part2 = undefined
-  where f = undefined
+part2 :: Input -> Int
+part2 = sum . map (sum . takeWhile (>0) . tail . iterate fuelRequired)
+
+fuelRequired :: Int -> Int
+fuelRequired mass = max 0 $ div mass 3 - 2
 
 
 
