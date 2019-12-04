@@ -82,6 +82,13 @@ k .* (Point y x) = Point (k * y) (k * x)
 sqNorm :: Vector -> Int
 sqNorm (Point y x) = y * y + x * x
 
+manhattanNorm :: Vector -> Int
+manhattanNorm (Point y x) = abs y + abs x
+
+origin :: Point
+origin = Point 0 0
+
+
 above, below, leftOf, rightOf :: Point -> Point
 above   (Point y x) = Point (y-1) x
 below   (Point y x) = Point (y+1) x
