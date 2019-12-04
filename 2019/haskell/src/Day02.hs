@@ -1,8 +1,3 @@
-{-# LANGUAGE ConstraintKinds  #-}
-{-# LANGUAGE FlexibleContexts #-}
-
-
-
 -- import
 
 import           Data.List.Split
