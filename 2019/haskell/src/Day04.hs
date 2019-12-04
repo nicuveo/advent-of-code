@@ -1,9 +1,11 @@
+{-# LANGUAGE ViewPatterns #-}
+
+
+
 -- import
 
-import           Data.Function (on)
 import           Data.List
-import           Data.Maybe
-import           Text.Parsec
+import           Data.List.Split
 
 import           AOC
 
@@ -11,24 +13,25 @@ import           AOC
 
 -- input
 
-type Input = String
+type Input = (Int, Int)
 
 parseInput :: String -> Input
-parseInput = map parseLine . lines
-  where parseLine = parseWith line
-        line = undefined
+parseInput i = let [a,b] = read <$> splitOn "-" i in (a,b)
 
 
 
 -- solution
 
-part1 :: Input -> String
-part1 = undefined
-  where f = undefined
+part1 :: Input -> Int
+part1 (a,b) = countIf (check (>1)) [a..b]
 
-part2 :: Input -> String
-part2 = undefined
-  where f = undefined
+part2 :: Input -> Int
+part2 (a,b) = countIf (check (==2)) [a..b]
+
+
+check :: (Int -> Bool) -> Int -> Bool
+check f (show -> n) =
+  and (zipWith (<=) n $ tail n) && any (f . length) (group n)
 
 
 
