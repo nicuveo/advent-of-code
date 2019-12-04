@@ -20,6 +20,7 @@ dependencies:
   - mtl
   - parsec
   - pqueue
+  - primitive
   - random
   - safe
   - split
