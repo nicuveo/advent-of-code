@@ -15,8 +15,8 @@ import           Control.Monad.Primitive
 import           Control.Monad.Reader
 import           Control.Monad.ST
 import           Data.Has
-import           Data.List                   (intercalate)
-import           Data.Ratio
+import           Data.List                   (intercalate, transpose)
+import           Data.List.Split             (chunksOf)
 import qualified Data.Vector.Unboxed         as V
 import qualified Data.Vector.Unboxed.Mutable as V
 import           Text.Printf
@@ -43,14 +43,19 @@ showProgram :: MonadProgram r b m => Int -> m String
 showProgram index = do
   Program mv <- asks getter
   v <- liftBase $ V.toList <$> V.freeze mv
-  return $ printf "[%s]" $ intercalate "," [ display i x
-                                           | i <- [0..]
-                                           | x <- v
-                                           ]
-  where display i x
-          | i /= index = printf "%4d" x
-          | otherwise  = bgColor highlight $ printf "%4d" x
-        highlight = interpolate (1%2) black blue
+  let chunks  = chunksOf 8 v
+      widths    = map (maximum . map (length . show)) $ transpose chunks
+      display r c x
+        | r*8 + c /= index =                make c x
+        | otherwise         = bgColor blue $ make c x
+      make c = printf $ "%" ++ show (widths !! c) ++ "d"
+  return $ unlines [ printf "[%s]" $ intercalate ", " [ display r c x
+                                                      | c <- [0..]
+                                                      | x <- line
+                                                      ]
+                   | r    <- [0..]
+                   | line <- chunks
+                   ]
 
 
 
