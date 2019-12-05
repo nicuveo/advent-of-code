@@ -1,6 +1,7 @@
 {-# LANGUAGE ConstraintKinds  #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MonoLocalBinds   #-}
+{-# LANGUAGE ParallelListComp #-}
 
 module IntCode where
 
@@ -42,10 +43,14 @@ showProgram :: MonadProgram r b m => Int -> m String
 showProgram index = do
   Program mv <- asks getter
   v <- liftBase $ V.toList <$> V.freeze mv
-  return $ printf "[%s]" $ intercalate "," [display i x | (i, x) <- zip [0..] v]
+  return $ printf "[%s]" $ intercalate "," [ display i x
+                                           | i <- [0..]
+                                           | x <- v
+                                           ]
   where display i x
           | i /= index = printf "%4d" x
-          | otherwise  = bgColor (interpolate (1%2) black blue) $ printf "%4d" x
+          | otherwise  = bgColor highlight $ printf "%4d" x
+        highlight = interpolate (1%2) black blue
 
 
 
