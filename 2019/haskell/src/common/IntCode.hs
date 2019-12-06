@@ -3,7 +3,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ParallelListComp           #-}
 
-module IntCode (run) where
+module IntCode (run, debug) where
 
 
 
@@ -176,37 +176,32 @@ run tape iBuffer = runST $ do
 
 
 
-
 -- debug
 
-{-
-showProgram :: MonadProgram r b m => Int -> m String
-showProgram index = do
-  Program mv <- asks getter
-  v <- liftBase $ V.toList <$> V.freeze mv
+debug :: V.Vector Int -> [Int] -> IO ()
+debug tape iBuffer = do
+  mv <- V.thaw tape
+  void $ runInVM (Tape mv) iBuffer $ exec $ \i -> do
+    liftIO . putStrLn =<< showVM i
+    step i
+
+showVM :: Int -> VM IO String
+showVM index = VM $ do
+  Tape mv    <- ask
+  IOData i o <- get
+  v <- lift $ lift $ V.toList <$> V.freeze mv
   let chunks  = chunksOf 8 v
       widths    = map (maximum . map (length . show)) $ transpose chunks
       display r c x
         | r*8 + c /= index =                make c x
-        | otherwise         = bgColor blue $ make c x
+        | otherwise        = bgColor blue $ make c x
       make c = printf $ "%" ++ show (widths !! c) ++ "d"
-  return $ unlines [ printf "[%s]" $ intercalate ", " [ display r c x
-                                                      | c <- [0..]
-                                                      | x <- line
-                                                      ]
-                   | r    <- [0..]
-                   | line <- chunks
-                   ]
-
-debugStep :: MonadProgram r IO m => Int -> m (Maybe Int)
-debugStep index = do
-  liftBase . putStrLn =<< showProgram index
-  step index
-
-runDebug :: V.Vector Int -> IO (V.Vector Int)
-runDebug program = do
-  v <- V.thaw program
-  runReaderT (exec debugStep) $ Program v
-  V.freeze v
-
--}
+  return $ unlines $ [ "input  buffer: " ++ show i
+                     , "output buffer: " ++ show (reverse o)
+                     ] ++ [ printf "[%s]" $ intercalate ", " [ display r c x
+                                                             | c <- [0..]
+                                                             | x <- line
+                                                             ]
+                          | r    <- [0..]
+                          | line <- chunks
+                          ]
