@@ -22,6 +22,7 @@ import           Prelude                     hiding (read)
 import           Text.Printf
 
 import           AOC.Debug.Color
+import           AOC.Misc
 
 
 
@@ -68,6 +69,13 @@ addI = binaryI (+)
 mulI :: MonadTape m => Instruction m
 mulI = binaryI (*)
 
+ltI :: MonadTape m => Instruction m
+ltI = binaryI $ fromEnum ... (<)
+
+eqI :: MonadTape m => Instruction m
+eqI = binaryI $ fromEnum ... (==)
+
+
 inI :: (MonadTape m, MonadInteract m) => Instruction m
 inI index _ = do
   writeAt (index + 1) =<< input
@@ -78,6 +86,21 @@ outI _ [] = error "outI: empty mode list"
 outI index (m:_) = do
   output =<< readAs m (index + 1)
   return $ index + 2
+
+
+jumpI :: MonadTape m => (Int -> Bool) -> Instruction m
+jumpI shouldJump index (m1:m2:_) = do
+  a <- readAs m1 $ index + 1
+  if shouldJump a
+    then readAs m2 $ index + 2
+    else return $ index + 3
+jumpI _ _ _ = error "jumpI: empty mode list"
+
+jmpTI :: MonadTape m => Instruction m
+jmpTI = jumpI (/= 0)
+
+jmpFI :: MonadTape m => Instruction m
+jmpFI = jumpI (== 0)
 
 
 
@@ -91,10 +114,14 @@ step index = do
   (opCode, modes) <- splitAt 2 . reverse . show <$> read index
   let ms = map toMode modes ++ repeat Position
   case take 2 $ opCode ++ "0" of
-    "10" -> Just <$> addI index ms
-    "20" -> Just <$> mulI index ms
-    "30" -> Just <$> inI  index ms
-    "40" -> Just <$> outI index ms
+    "10" -> Just <$> addI  index ms
+    "20" -> Just <$> mulI  index ms
+    "30" -> Just <$> inI   index ms
+    "40" -> Just <$> outI  index ms
+    "50" -> Just <$> jmpTI index ms
+    "60" -> Just <$> jmpFI index ms
+    "70" -> Just <$> ltI   index ms
+    "80" -> Just <$> eqI   index ms
     "99" -> return Nothing
     _    -> error $ "unexpected opCode: " ++ opCode
   where toMode '0' = Position
@@ -145,7 +172,7 @@ run tape iBuffer = runST $ do
   mv <- V.thaw tape
   o  <- runInVM (Tape mv) iBuffer $ exec step
   v  <- V.freeze mv
-  return (v, o)
+  return (v, reverse o)
 
 
 
