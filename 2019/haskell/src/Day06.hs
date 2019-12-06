@@ -1,34 +1,54 @@
+{-# LANGUAGE BangPatterns #-}
+
+
+
 -- import
 
-import           Data.Function (on)
 import           Data.List
-import           Data.Maybe
-import           Text.Parsec
+import           Data.List.Split
+import qualified Data.Map        as M
 
-import           AOC
+import           AOC             hiding (findPath)
 
 
 
 -- input
 
-type Input = String
+type Name  = String
+type Input = M.Map Name [Name]
 
 parseInput :: String -> Input
-parseInput = map parseLine . lines
-  where parseLine = parseWith line
-        line = undefined
+parseInput = foldl' addEdge M.empty . lines
+  where addEdge m l =
+          let [a,b] = splitOn ")" l
+          in  M.insertWith (++) a [b] m
 
 
 
 -- solution
 
-part1 :: Input -> String
-part1 = undefined
-  where f = undefined
+part1 :: Input -> Int
+part1 input = totalOrbits 0 "COM"
+  where totalOrbits !depth name =
+          depth + sum [ totalOrbits (depth+1) orbit
+                      | orbit <- getOrbits name
+                      ]
+        getOrbits name = M.findWithDefault [] name input
 
-part2 :: Input -> String
-part2 = undefined
-  where f = undefined
+part2 :: Input -> Int
+part2 input = length $ concat $ dropCommon [pathToYOU, pathToSAN]
+  where pathToYOU  = findPath input "YOU"
+        pathToSAN  = findPath input "SAN"
+        dropCommon [a:as, b:bs]
+          | a == b = dropCommon [as, bs]
+        dropCommon ps = ps
+
+findPath :: Input -> Name -> [Name]
+findPath input target = head $ fp "COM"
+  where fp n
+          | n == target = [[]]
+          | otherwise   = concat [map (n:) $ fp o | o <- getOrbits n]
+        getOrbits name = M.findWithDefault [] name input
 
 
 
