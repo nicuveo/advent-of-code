@@ -19,9 +19,13 @@ parseInput = map read . splitOn ","
 
 -- solution
 
+exec :: Int -> Int -> [Int] -> Int
+exec i1 i2 v = fst (run program []) V.! 0
+  where program = V.fromList v V.// [(1, i1), (2, i2)]
+
+
 part1 :: Input -> Int
-part1 input = run program V.! 0
-  where program = V.fromList input V.// [(1, 12), (2, 2)]
+part1 = exec 12 2
 
 part2 :: Input -> Int
 part2 input = head [ 100 * n + v
@@ -29,7 +33,7 @@ part2 input = head [ 100 * n + v
                    , v <- [0..99]
                    , answer n v == 19690720
                    ]
-  where answer n v = run (V.fromList input V.// [(1, n), (2, v)]) V.! 0
+  where answer n v = exec n v input
 
 
 

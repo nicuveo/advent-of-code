@@ -1,44 +1,158 @@
-{-# LANGUAGE ConstraintKinds  #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE MonoLocalBinds   #-}
-{-# LANGUAGE ParallelListComp #-}
+{-# LANGUAGE ConstraintKinds            #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ParallelListComp           #-}
 
-module IntCode where
+module IntCode (run) where
 
 
 
 -- import
 
-import           Control.Monad.Base
 import           Control.Monad.Extra
 import           Control.Monad.Primitive
 import           Control.Monad.Reader
 import           Control.Monad.ST
-import           Data.Has
+import           Control.Monad.State
 import           Data.List                   (intercalate, transpose)
 import           Data.List.Split             (chunksOf)
 import qualified Data.Vector.Unboxed         as V
 import qualified Data.Vector.Unboxed.Mutable as V
+import           Prelude                     hiding (read)
 import           Text.Printf
 
 import           AOC.Debug.Color
 
 
 
--- program
+-- capabilities
 
-newtype Program s = Program (V.MVector s Int)
+class Monad m => MonadTape m where
+  read  :: Int -> m Int
+  write :: Int -> Int -> m ()
 
-type MonadProgram r b m = ( PrimMonad b
-                          , MonadReader r m
-                          , Has (Program (PrimState b)) r
-                          , MonadBase b m
-                          )
+class Monad m => MonadInteract m where
+  input  :: m Int
+  output :: Int -> m ()
+
+
+
+-- memory access
+
+data Mode = Immediate | Position deriving (Show, Eq)
+
+readAs :: MonadTape m => Mode -> Int -> m Int
+readAs Immediate = read
+readAs Position  = read >=> read
+
+writeAt :: MonadTape m => Int -> Int -> m ()
+writeAt p x = read p >>= \i -> write i x
+
+
+
+-- instructions
+
+type Instruction m = Int -> [Mode] -> m Int
+
+binaryI :: MonadTape m => (Int -> Int -> Int) -> Instruction m
+binaryI (#) index (m1:m2:_) = do
+  a <- readAs m1 $ index + 1
+  b <- readAs m2 $ index + 2
+  writeAt (index + 3) $ a # b
+  return $ index + 4
+binaryI _ _ _ = error "binaryI: empty mode list"
+
+addI :: MonadTape m => Instruction m
+addI = binaryI (+)
+
+mulI :: MonadTape m => Instruction m
+mulI = binaryI (*)
+
+inI :: (MonadTape m, MonadInteract m) => Instruction m
+inI index _ = do
+  writeAt (index + 1) =<< input
+  return $ index + 2
+
+outI :: (MonadTape m, MonadInteract m) => Instruction m
+outI _ [] = error "outI: empty mode list"
+outI index (m:_) = do
+  output =<< readAs m (index + 1)
+  return $ index + 2
+
+
+
+-- execution
+
+exec :: Monad m => (Int -> m (Maybe Int)) ->  m ()
+exec f = fix (\e i -> whenJustM (f i) e) 0
+
+step :: (MonadTape m, MonadInteract m) => Int -> m (Maybe Int)
+step index = do
+  (opCode, modes) <- splitAt 2 . reverse . show <$> read index
+  let ms = map toMode modes ++ repeat Position
+  case take 2 $ opCode ++ "0" of
+    "10" -> Just <$> addI index ms
+    "20" -> Just <$> mulI index ms
+    "30" -> Just <$> inI  index ms
+    "40" -> Just <$> outI index ms
+    "99" -> return Nothing
+    _    -> error $ "unexpected opCode: " ++ opCode
+  where toMode '0' = Position
+        toMode '1' = Immediate
+        toMode c   = error $ "unexpected mode: " ++ [c]
+
+
+
+-- vm
+
+newtype Tape m = Tape (V.MVector (PrimState m) Int)
+
+data IOData = IOData { inputBuffer  :: [Int]
+                     , outputBuffer :: [Int]
+                     }
+
+newtype VM m a = VM { runVM :: StateT IOData (ReaderT (Tape m) m) a }
+  deriving (Functor, Applicative, Monad, MonadIO)
+
+
+instance PrimMonad m => MonadTape (VM m) where
+  read index = VM $ do
+    Tape v <- ask
+    lift $ lift $ V.read v index
+  write index value = VM $ do
+    Tape v <- ask
+    lift $ lift $ V.write v index value
+
+instance Monad m => MonadInteract (VM m) where
+  input = VM $ state $ \iod@(IOData (x:xs) _) -> (x, iod {inputBuffer = xs})
+  output x = VM $ modify $ \iod -> iod {outputBuffer = x : outputBuffer iod}
+
+
+runInVM :: PrimMonad m => Tape m -> [Int] -> VM m () -> m [Int]
+runInVM tape iBuffer = fmap outputBuffer        .
+                       runR tape                .
+                       runS (IOData iBuffer []) .
+                       runVM
+  where runR = flip runReaderT
+        runS = flip execStateT
+
+
+
+-- execution
+
+run :: V.Vector Int -> [Int] -> (V.Vector Int, [Int])
+run tape iBuffer = runST $ do
+  mv <- V.thaw tape
+  o  <- runInVM (Tape mv) iBuffer $ exec step
+  v  <- V.freeze mv
+  return (v, o)
+
 
 
 
 -- debug
 
+{-
 showProgram :: MonadProgram r b m => Int -> m String
 showProgram index = do
   Program mv <- asks getter
@@ -57,71 +171,15 @@ showProgram index = do
                    | line <- chunks
                    ]
 
-
-
--- memory access
-
-get :: MonadProgram r b m => Int -> m Int
-get x = do
-  Program v <- asks getter
-  liftBase $ V.read v x
-
-set :: MonadProgram r b m => Int -> Int -> m ()
-set i x = do
-  Program v <- asks getter
-  liftBase $ V.write v i x
-
-
-
--- instructions
-
-type Instruction m = Int -> m Int
-
-binaryI :: MonadProgram r b m => (Int -> Int -> Int) -> Instruction m
-binaryI (#) index = do
-  a <- get =<< get (index + 1)
-  b <- get =<< get (index + 2)
-  d <- get $ index + 3
-  set d $ a # b
-  return $ index + 4
-
-addI :: MonadProgram r b m => Instruction m
-addI = binaryI (+)
-
-mulI :: MonadProgram r b m => Instruction m
-mulI = binaryI (*)
-
-
-
--- execution
-
-exec :: Monad m => (Int -> m (Maybe Int)) ->  m ()
-exec f = fix (\e i -> whenJustM (f i) e) 0
-
-
-step :: MonadProgram r b m => Int -> m (Maybe Int)
-step index = do
-  opCode <- get index
-  case opCode of
-    1  -> Just <$> addI index
-    2  -> Just <$> mulI index
-    99 -> return Nothing
-    _  -> error $ "unexpected opCode: " ++ show opCode
-
 debugStep :: MonadProgram r IO m => Int -> m (Maybe Int)
 debugStep index = do
   liftBase . putStrLn =<< showProgram index
   step index
-
-
-run :: V.Vector Int -> V.Vector Int
-run program = runST $ do
-  v <- V.thaw program
-  runReaderT (exec step) $ Program v
-  V.freeze v
 
 runDebug :: V.Vector Int -> IO (V.Vector Int)
 runDebug program = do
   v <- V.thaw program
   runReaderT (exec debugStep) $ Program v
   V.freeze v
+
+-}
