@@ -1,6 +1,10 @@
 -- import
 
+import qualified Data.Vector.Unboxed as V
+
 import           AOC
+import           IntCode
+import           IntCodePlusPlus
 
 
 
@@ -10,6 +14,28 @@ type Input = [Int]
 
 parseInput :: String -> Input
 parseInput = map read . lines
+
+
+-- intcode++
+
+program :: String
+program = unlines [ "read mass"
+                  , "total = 0"
+                  , "while (mass >= 0) {"
+                  , "  d = 0"
+                  , "  r = 0"
+                  , "  while (d < mass) {"
+                  , "    d = d + 3"
+                  , "    r = r + 1"
+                  , "  }"
+                  , "  if (d != mass) {"
+                  , "    r = r + (-1)"
+                  , "  }"
+                  , "  total = total + (r + (-2))"
+                  , "  read mass"
+                  , "}"
+                  , "print total"
+                  ]
 
 
 
@@ -33,3 +59,8 @@ main = aocMain 1 $ \rawInput -> do
   let input = parseInput rawInput
   print $ part1 input
   print $ part2 input
+  print $ parseProgram "day01" program
+  print $ compile =<< parseProgram "day01" program
+  let ic = either error id $ transpile "day01" program
+  print ic
+  print $ run (V.fromList ic) (input ++ [-1])
