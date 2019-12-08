@@ -128,7 +128,7 @@ parseProgram = left show ... parse program
                             , printI
                             , assign
                             , padding
-                            ] <?> "expecting a statement"
+                            ] <?> "a statement or a block"
 
          gotoLabel = GotoLabel <$> brackets identifier
          ifBlock = do
@@ -166,8 +166,8 @@ parseProgram = left show ... parse program
                              , binary "/=" expression expression CNE
                              ]
 
-         expression = tryAll [ETerm   <$> term,   binary "+" term expression Add]
-         term       = tryAll [TFactor <$> factor, binary "*" factor term Mul]
+         expression = tryAll [binary "+" term expression Add, ETerm   <$> term]
+         term       = tryAll [binary "*" factor term Mul,     TFactor <$> factor]
          factor     = tryAll [ Parenthesized <$> parens expression
                              , Variable <$> identifier
                              , Literal . fromInteger <$> iLiteral
