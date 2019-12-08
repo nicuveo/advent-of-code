@@ -7,6 +7,7 @@ import           Control.Monad.Except
 import           Control.Monad.Extra
 import           Control.Monad.State
 import           Data.Bool
+import           Data.Foldable
 import qualified Data.Map             as M
 import qualified Data.Set             as S
 import           Prelude              hiding (compare)
@@ -301,7 +302,7 @@ appendSub p1 p2 d dest = do
 appendDiv :: Param -> Param -> Int -> Int -> Compilation ()
 appendDiv p1 p2 d dest = do
     pos <- gets csPos
-    void $ traverse (registerVar . tempVar) [d+2 .. d+6]
+    traverse_ (registerVar . tempVar) [d+2 .. d+6]
     res <- varAddress $ tempVar $ d + 2
     acc <- varAddress $ tempVar $ d + 3
     tmp <- varAddress $ tempVar $ d + 4
@@ -461,7 +462,7 @@ compare = ec0 0
         bbi op = binaryInstruction evaluate evaluate $ fromEnum ... op
 
 process :: [Statement] -> Compilation ()
-process = void . traverse step
+process = traverse_ step
   where step (GotoLabel n)    = createLabel n
         step (Goto l)         = appendGoto l
         step (Jump e)         = appendJump e
