@@ -15,6 +15,8 @@ import           Text.Parsec.String   (Parser)
 import qualified Text.Parsec.Token    as P
 import           Text.Printf
 
+import           Debug.Trace
+
 import           AOC.Misc
 
 
@@ -290,22 +292,23 @@ appendAssign n e = do
   registerVar n
   appendInstruction $ AddI p (Immediate 0) i
 
-appendSub :: Param -> Param -> Int -> Compilation ()
-appendSub p1 p2 res = do
-  tmp <- varAddress $ tempVar $ res + 2
-  registerVar $ tempVar $ res + 2
-  appendInstruction $ MulI p2 (Immediate (-1)) tmp
-  appendInstruction $ AddI p1 (Position tmp)   res
+appendSub :: Param -> Param -> Int -> Int -> Compilation ()
+appendSub p1 p2 d dest = do
+  let tmpVar = tempVar $ d + 2
+  registerVar tmpVar
+  tmp <- varAddress tmpVar
+  appendInstruction $ MulI p2 (Immediate (-1)) $ trace "2" $ tmp
+  appendInstruction $ AddI p1 (Position tmp)   $ trace "3" $ dest
 
-appendDiv :: Param -> Param -> Int -> Compilation ()
-appendDiv p1 p2 dest = do
+appendDiv :: Param -> Param -> Int -> Int -> Compilation ()
+appendDiv p1 p2 d dest = do
     pos <- gets csPos
-    res <- varAddress $ tempVar $ dest + 2
-    acc <- varAddress $ tempVar $ dest + 3
-    tmp <- varAddress $ tempVar $ dest + 4
-    a   <- varAddress $ tempVar $ dest + 5
-    b   <- varAddress $ tempVar $ dest + 6
-    void $ traverse (registerVar . tempVar) [dest+2 .. dest+6]
+    void $ traverse (registerVar . tempVar) [d+2 .. d+6]
+    res <- varAddress $ tempVar $ d + 2
+    acc <- varAddress $ tempVar $ d + 3
+    tmp <- varAddress $ tempVar $ d + 4
+    a   <- varAddress $ tempVar $ d + 5
+    b   <- varAddress $ tempVar $ d + 6
 
     -- pos +  0: test that p2 /= 0
     appendInstruction $ JmpTI p2 $ Immediate $ pos + 6
@@ -404,7 +407,7 @@ blockWhile c b = do
 binaryOperation :: (Int -> a -> Compilation Param)
                 -> (Int -> b -> Compilation Param)
                 -> (Int -> Int -> Int)
-                -> (Param -> Param -> Int -> Compilation ())
+                -> (Param -> Param -> Int -> Int -> Compilation ())
                 -> Int -> a -> b -> Compilation Param
 binaryOperation eval1 eval2 (#) doI d e1 e2 = do
   p1 <- eval1  d    e1
@@ -415,7 +418,7 @@ binaryOperation eval1 eval2 (#) doI d e1 e2 = do
       let vName = tempVar d
       registerVar vName
       dest <- varAddress vName
-      doI p1 p2 dest
+      doI p1 p2 d dest
       return (Position dest)
 
 binaryInstruction :: (Int -> a -> Compilation Param)
@@ -424,7 +427,7 @@ binaryInstruction :: (Int -> a -> Compilation Param)
                   -> (Param -> Param -> Int -> Instruction)
                   -> Int -> a -> b -> Compilation Param
 binaryInstruction eval1 eval2 (#) createI =
-  binaryOperation eval1 eval2 (#) (\p1 p2 d -> appendInstruction $ createI p1 p2 d)
+  binaryOperation eval1 eval2 (#) (\p1 p2 _ d -> appendInstruction $ createI p1 p2 d)
 
 evaluate :: Int -> Expression -> Compilation Param
 evaluate = ee
