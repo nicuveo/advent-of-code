@@ -15,8 +15,6 @@ import           Text.Parsec.String   (Parser)
 import qualified Text.Parsec.Token    as P
 import           Text.Printf
 
-import           Debug.Trace
-
 import           AOC.Misc
 
 
@@ -297,8 +295,8 @@ appendSub p1 p2 d dest = do
   let tmpVar = tempVar $ d + 2
   registerVar tmpVar
   tmp <- varAddress tmpVar
-  appendInstruction $ MulI p2 (Immediate (-1)) $ trace "2" $ tmp
-  appendInstruction $ AddI p1 (Position tmp)   $ trace "3" $ dest
+  appendInstruction $ MulI p2 (Immediate (-1)) tmp
+  appendInstruction $ AddI p1 (Position tmp)   dest
 
 appendDiv :: Param -> Param -> Int -> Int -> Compilation ()
 appendDiv p1 p2 d dest = do
