@@ -30,6 +30,7 @@ program = unlines [ "read mass"
                   ]
 
 
+
 -- solution
 
 part1 :: Input -> Int

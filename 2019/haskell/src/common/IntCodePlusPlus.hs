@@ -338,7 +338,7 @@ appendDiv p1 p2 d dest = do
     gets csPos >>= \p -> when (p /= pos+66) $ error $ "expected 66 got" ++ show p
     appendInstruction $ AddI  (Immediate 0)    (Immediate 0)    res
     appendInstruction $ AddI  (Immediate 0)    (Immediate 0)    acc
-    appendInstruction $ AddI  (Immediate (-1)) (Position  b)    b
+    appendInstruction $ MulI  (Immediate (-1)) (Position  b)    b
     gets csPos >>= \p -> when (p /= pos+78) $ error $ "expected 78 got" ++ show p
     appendInstruction $ LtI   (Position acc)   (Position a)     tmp
     appendInstruction $ JmpFI (Position tmp) $ Immediate $ pos + 96
