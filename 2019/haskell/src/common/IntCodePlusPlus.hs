@@ -54,10 +54,12 @@ data Condition2 = Barenthesized  Condition
 
 data Expression = ETerm Term
                 | Add   Term Expression
+                | Sub   Term Expression
                 deriving (Show, Eq)
 
 data Term       = TFactor Factor
                 | Mul     Factor Term
+                | Div     Factor Term
                 deriving (Show, Eq)
 
 data Factor     = Parenthesized Expression
@@ -157,6 +159,8 @@ parseProgram = left show ... parse program
                              , binary "and" condition2 condition1 BAnd
                              ]
          condition2 = tryAll [ Barenthesized <$> parens condition0
+                             , Not <$> (symbol "!"   >> parens condition0)
+                             , Not <$> (symbol "not" >> parens condition0)
                              , binary "<"  expression expression CLT
                              , binary "<=" expression expression CLE
                              , binary ">"  expression expression CGT
@@ -166,8 +170,14 @@ parseProgram = left show ... parse program
                              , binary "/=" expression expression CNE
                              ]
 
-         expression = tryAll [binary "+" term expression Add, ETerm   <$> term]
-         term       = tryAll [binary "*" factor term Mul,     TFactor <$> factor]
+         expression = tryAll [ binary "+" term expression Add
+                             , binary "-" term expression Sub
+                             , ETerm <$> term
+                             ]
+         term       = tryAll [ binary "*" factor term Mul
+                             , binary "/" factor term Div
+                             , TFactor <$> factor
+                             ]
          factor     = tryAll [ Parenthesized <$> parens expression
                              , Variable <$> identifier
                              , Literal . fromInteger <$> iLiteral
@@ -280,6 +290,64 @@ appendAssign n e = do
   registerVar n
   appendInstruction $ AddI p (Immediate 0) i
 
+appendSub :: Param -> Param -> Int -> Compilation ()
+appendSub p1 p2 res = do
+  tmp <- varAddress $ tempVar $ res + 2
+  registerVar $ tempVar $ res + 2
+  appendInstruction $ MulI p2 (Immediate (-1)) tmp
+  appendInstruction $ AddI p1 (Position tmp)   res
+
+appendDiv :: Param -> Param -> Int -> Compilation ()
+appendDiv p1 p2 dest = do
+    pos <- gets csPos
+    res <- varAddress $ tempVar $ dest + 2
+    acc <- varAddress $ tempVar $ dest + 3
+    tmp <- varAddress $ tempVar $ dest + 4
+    a   <- varAddress $ tempVar $ dest + 5
+    b   <- varAddress $ tempVar $ dest + 6
+    void $ traverse (registerVar . tempVar) [dest+2 .. dest+6]
+
+    -- pos +  0: test that p2 /= 0
+    appendInstruction $ JmpTI p2 $ Immediate $ pos + 6
+    appendInstruction $ JmpTI (Immediate 1) $ Immediate (-1) -- crash the program
+    appendInstruction $ AddI p1 (Immediate 0) a
+    appendInstruction $ AddI p2 (Immediate 0) b
+    -- pos + 14: if a < 0, switch both signs
+    appendInstruction $ LtI  p1 (Immediate 0) tmp
+    appendInstruction $ JmpFI (Position tmp) $ Immediate $ pos + 29
+    appendInstruction $ MulI  (Immediate (-1)) (Position a) a
+    appendInstruction $ MulI  (Immediate (-1)) (Position b) b
+    -- pos + 29: test whether b < 0
+    gets csPos >>= \p -> when (p /= pos+29) $ error $ "expected 29 got" ++ show p
+    appendInstruction $ LtI   (Position b) (Immediate 0) tmp
+    appendInstruction $ JmpTI (Position tmp) $ Immediate $ pos + 66
+    -- pos + 36: same sign
+    gets csPos >>= \p -> when (p /= pos+36) $ error $ "expected 36 got" ++ show p
+    appendInstruction $ AddI  (Immediate 0)  (Immediate (-1)) res
+    appendInstruction $ AddI  (Immediate 0)  (Immediate 0)    acc
+    appendInstruction $ AddI  (Immediate 1)  (Position a)     a
+    gets csPos >>= \p -> when (p /= pos+48) $ error $ "expected 48 got" ++ show p
+    appendInstruction $ LtI   (Position acc) (Position a)     tmp
+    appendInstruction $ JmpFI (Position tmp) $ Immediate $ pos + 96
+    appendInstruction $ AddI  (Position res) (Immediate 1)    res
+    appendInstruction $ AddI  (Position acc) (Position  b)    acc
+    appendInstruction $ JmpTI (Immediate 1)  $ Immediate $ pos + 48
+    -- pos + 66: diff sign
+    gets csPos >>= \p -> when (p /= pos+66) $ error $ "expected 66 got" ++ show p
+    appendInstruction $ AddI  (Immediate 0)    (Immediate 0)    res
+    appendInstruction $ AddI  (Immediate 0)    (Immediate 0)    acc
+    appendInstruction $ AddI  (Immediate (-1)) (Position  b)    b
+    gets csPos >>= \p -> when (p /= pos+78) $ error $ "expected 78 got" ++ show p
+    appendInstruction $ LtI   (Position acc)   (Position a)     tmp
+    appendInstruction $ JmpFI (Position tmp) $ Immediate $ pos + 96
+    appendInstruction $ AddI  (Position res)   (Immediate (-1)) res
+    appendInstruction $ AddI  (Position acc)   (Position  b)    acc
+    appendInstruction $ JmpTI (Immediate 1)  $ Immediate $ pos + 78
+    -- pos + 96: end
+    gets csPos >>= \p -> when (p /= pos+96) $ error $ "expected 96 got" ++ show p
+    appendInstruction $ AddI (Position res) (Immediate 0) dest
+
+
 appendNot :: Param -> Compilation Param
 appendNot (Immediate x) = return $ Immediate $ 1 - signum x
 appendNot (Position  x) = do
@@ -289,6 +357,7 @@ appendNot (Position  x) = do
   appendInstruction $ JmpTI (Immediate 1) $ Immediate $ pos + 14
   appendInstruction $ AddI  (Immediate 0) (Immediate 0) x
   return $ Position x
+
 
 appendPadding :: Int -> Compilation ()
 appendPadding n = sequence_ [appendInstruction $ Var $ printf "padding-%3f" i | i <- [1..n]]
@@ -355,15 +424,16 @@ binaryInstruction :: (Int -> a -> Compilation Param)
                   -> (Param -> Param -> Int -> Instruction)
                   -> Int -> a -> b -> Compilation Param
 binaryInstruction eval1 eval2 (#) createI =
-  binaryOperation eval1 eval2 (#) (appendInstruction ..... createI)
-  where (.....) = (.) . (.) . (.)
+  binaryOperation eval1 eval2 (#) (\p1 p2 d -> appendInstruction $ createI p1 p2 d)
 
 evaluate :: Int -> Expression -> Compilation Param
 evaluate = ee
   where ee d (ETerm t)   = et d t
         ee d (Add t1 e2) = binaryInstruction et ee (+) AddI d t1 e2
+        ee d (Sub t1 e2) = binaryOperation et ee (-) appendSub d t1 e2
         et d (TFactor f) = ef d f
         et d (Mul f1 t2) = binaryInstruction ef et (*) MulI d f1 t2
+        et d (Div f1 t2) = binaryOperation ef et div appendDiv d f1 t2
         ef d (Parenthesized e) = ee d e
         ef _ (Literal       i) = return $ Immediate i
         ef _ (Address       i) = return $ Position  i

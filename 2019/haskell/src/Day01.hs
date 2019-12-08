@@ -16,27 +16,36 @@ parseInput :: String -> Input
 parseInput = map read . lines
 
 
+
 -- intcode++
 
+{-
 program :: String
 program = unlines [ "read mass"
                   , "total = 0"
                   , "while (mass >= 0) {"
                   , "  d = 0"
                   , "  r = 0"
-                  , "  while (d < mass) {"
+                  , "  while (d <= mass) {"
                   , "    d = d + 3"
                   , "    r = r + 1"
                   , "  }"
-                  , "  if (d != mass) {"
-                  , "    r = r + (-1)"
-                  , "  }"
-                  , "  total = total + (r + (-2))"
+                  , "  total = total + r + (-3)"
                   , "  read mass"
                   , "}"
                   , "print total"
                   ]
-
+-}
+program :: String
+program = unlines [ "read mass"
+                  , "total = 0"
+                  , "while (mass >= 0) {"
+                  , "  tmp = mass / 3"
+                  , "  total = total + tmp + (-2)"
+                  , "  read mass"
+                  , "}"
+                  , "print total"
+                  ]
 
 
 -- solution
