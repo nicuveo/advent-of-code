@@ -67,6 +67,7 @@ data Factor     = Parenthesized Expression
                 | Variable      String
                 | Literal       Int
                 | Address       Int
+                | Deref         Expression
                 deriving (Show, Eq)
 
 
@@ -183,13 +184,17 @@ parseProgram = left show ... parse program
                              , Variable <$> identifier
                              , Literal . fromInteger <$> iLiteral
                              , Address . fromInteger <$> (char '@' >> iLiteral)
+                             , Deref . ETerm . TFactor . Variable <$> (char '$' >> identifier)
+                             , Deref <$> (char '$' >> braces expression)
                              ]
 
 
 
 -- compiler
 
-data Param = Immediate Int | Position Int deriving (Show, Eq)
+data Param = Immediate Int
+           | Position  Int
+           deriving (Show, Eq)
 
 data Instruction = AddI  Param Param Int
                  | MulI  Param Param Int
@@ -439,6 +444,18 @@ evaluate = ee
         ef d (Parenthesized e) = ee d e
         ef _ (Literal       i) = return $ Immediate i
         ef _ (Address       i) = return $ Position  i
+        ef d (Deref         e) = do
+          let vName = tempVar d
+          registerVar vName
+          dest <- varAddress vName
+          p    <- evaluate d e
+          case p of
+            Immediate x -> appendInstruction $ AddI (Position x) (Immediate 0) dest
+            Position  x -> do
+              pos <- gets csPos
+              appendInstruction $ AddI (Position x)    (Immediate 0) $ pos + 5
+              appendInstruction $ AddI (Position (-1)) (Immediate 0) dest
+          return (Position dest)
         ef _ (Variable      n) = do
           whenM (gets $ \s -> n `S.notMember` csLVar s) $
             throwError $ printf "error: variable %s not in scope" n
