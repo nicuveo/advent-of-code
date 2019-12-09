@@ -17,7 +17,7 @@ import           Control.Monad.State
 import           Data.List                   (intercalate, transpose)
 import           Data.List.Split             (chunksOf)
 import qualified Data.Vector                 as BV
-import qualified Data.Vector.Unboxed         as V
+import qualified Data.Vector.Unboxed         as V hiding (length)
 import qualified Data.Vector.Unboxed.Mutable as V hiding (replicate)
 import           Prelude                     hiding (read)
 import           Text.Printf
@@ -37,18 +37,32 @@ class Monad m => MonadInteract m where
   input  :: m (Maybe Int)
   output :: Int -> m ()
 
+class Monad m => MonadRelativeBase m where
+  getBase   :: m Int
+  addToBase :: Int -> m ()
+
+type MonadVM m = (MonadTape m, MonadRelativeBase m)
+
 
 
 -- memory access
 
-data Mode = Immediate | Position deriving (Show, Eq)
+data Mode = Immediate
+          | Position
+          | Relative
+          deriving (Show, Eq)
 
-readAs :: MonadTape m => Mode -> Int -> m Int
+readAs :: MonadVM m => Mode -> Int -> m Int
 readAs Immediate = read
-readAs Position  = read >=> read
+readAs Position  = read <=< read
+readAs Relative  = read <=< readRelative
+  where readRelative pos = liftM2 (+) getBase $ read pos
 
-writeAt :: MonadTape m => Int -> Int -> m ()
-writeAt p x = read p >>= \i -> write i x
+writeAs :: MonadVM m => Mode -> Int -> Int -> m ()
+writeAs Immediate _ _ = error "write: immediate mode"
+writeAs Position  p x = read         p >>= \i -> write i x
+writeAs Relative  p x = readRelative p >>= \i -> write i x
+  where readRelative pos = liftM2 (+) getBase $ read pos
 
 
 
@@ -56,44 +70,45 @@ writeAt p x = read p >>= \i -> write i x
 
 type Instruction m = Int -> [Mode] -> m Int
 
-binaryI :: MonadTape m => (Int -> Int -> Int) -> Instruction m
-binaryI (#) index (m1:m2:_) = do
+binaryI :: MonadVM m => (Int -> Int -> Int) -> Instruction m
+binaryI (#) index (m1:m2:m3:_) = do
   a <- readAs m1 $ index + 1
   b <- readAs m2 $ index + 2
-  writeAt (index + 3) $ a # b
+  writeAs m3 (index + 3) $ a # b
   return $ index + 4
 binaryI _ _ _ = error "binaryI: empty mode list"
 
-addI :: MonadTape m => Instruction m
+addI :: MonadVM m => Instruction m
 addI = binaryI (+)
 
-mulI :: MonadTape m => Instruction m
+mulI :: MonadVM m => Instruction m
 mulI = binaryI (*)
 
-ltI :: MonadTape m => Instruction m
+ltI :: MonadVM m => Instruction m
 ltI = binaryI $ fromEnum ... (<)
 
-eqI :: MonadTape m => Instruction m
+eqI :: MonadVM m => Instruction m
 eqI = binaryI $ fromEnum ... (==)
 
 
-inI :: (MonadTape m, MonadInteract m) => Instruction m
-inI index _ = do
+inI :: (MonadVM m, MonadInteract m) => Instruction m
+inI _ [] = error "inI: empty mode list"
+inI index (m:_) = do
   value <- input
   case value of
     Nothing -> return index
     Just x  -> do
-      writeAt (index + 1) x
+      writeAs m (index + 1) x
       return $ index + 2
 
-outI :: (MonadTape m, MonadInteract m) => Instruction m
+outI :: (MonadVM m, MonadInteract m) => Instruction m
 outI _ [] = error "outI: empty mode list"
 outI index (m:_) = do
   output =<< readAs m (index + 1)
   return $ index + 2
 
 
-jumpI :: MonadTape m => (Int -> Bool) -> Instruction m
+jumpI :: MonadVM m => (Int -> Bool) -> Instruction m
 jumpI shouldJump index (m1:m2:_) = do
   a <- readAs m1 $ index + 1
   if shouldJump a
@@ -101,11 +116,18 @@ jumpI shouldJump index (m1:m2:_) = do
     else return $ index + 3
 jumpI _ _ _ = error "jumpI: empty mode list"
 
-jmpTI :: MonadTape m => Instruction m
+jmpTI :: MonadVM m => Instruction m
 jmpTI = jumpI (/= 0)
 
-jmpFI :: MonadTape m => Instruction m
+jmpFI :: MonadVM m => Instruction m
 jmpFI = jumpI (== 0)
+
+
+rbI :: MonadVM m => Instruction m
+rbI _ [] = error "rbI: empty mode list"
+rbI index (m:_) = do
+  addToBase =<< readAs m (index + 1)
+  return $ index + 2
 
 
 
@@ -114,7 +136,7 @@ jmpFI = jumpI (== 0)
 exec :: Monad m => (Int -> m (Maybe Int)) ->  m ()
 exec f = fix (\e i -> whenJustM (f i) e) 0
 
-step :: (MonadTape m, MonadInteract m) => Int -> m (Maybe Int)
+step :: (MonadVM m, MonadInteract m) => Int -> m (Maybe Int)
 step index = do
   (opCode, modes) <- splitAt 2 . reverse . show <$> read index
   let ms = map toMode modes ++ repeat Position
@@ -127,48 +149,63 @@ step index = do
     "60" -> Just <$> jmpFI index ms
     "70" -> Just <$> ltI   index ms
     "80" -> Just <$> eqI   index ms
+    "90" -> Just <$> rbI   index ms
     "99" -> return Nothing
     _    -> error $ "unexpected opCode: " ++ opCode
   where toMode '0' = Position
         toMode '1' = Immediate
+        toMode '2' = Relative
         toMode c   = error $ "unexpected mode: " ++ [c]
-
 
 
 -- vm
 
-newtype Tape m = Tape (V.MVector (PrimState m) Int)
+type Tape m = V.MVector (PrimState m) Int
 
-data IOData = IOData { inputBuffer  :: [Int]
-                     , outputBuffer :: [Int]
-                     }
+data VMData  m = VMData { programTape  :: Tape m
+                        , inputBuffer  :: [Int]
+                        , outputBuffer :: [Int]
+                        , relativeBase :: Int
+                        }
 
-newtype VM m a = VM { runVM :: StateT IOData (ReaderT (Tape m) m) a }
+newtype VM m a = VM { runVM :: StateT (VMData m) m a }
   deriving (Functor, Applicative, Monad, MonadIO)
 
 
 instance PrimMonad m => MonadTape (VM m) where
   read index = VM $ do
-    Tape v <- ask
-    lift $ lift $ V.read v index
+    v <- gets programTape
+    if index < V.length v
+    then lift $ V.read v index
+    else do
+      newTape <- V.grow v $ max (index + 1) $ 2 * V.length v
+      modify $ \s -> s {programTape = newTape}
+      lift $ V.read newTape index
+
   write index value = VM $ do
-    Tape v <- ask
-    lift $ lift $ V.write v index value
+    v <- gets programTape
+    if index < V.length v
+    then lift $ V.write v index value
+    else do
+      newTape <- V.grow v $ max (index + 1) $ 2 * V.length v
+      modify $ \s -> s {programTape = newTape}
+      lift $ V.write newTape index value
+
+instance PrimMonad m => MonadRelativeBase (VM m) where
+  getBase = VM $ gets relativeBase
+  addToBase delta = VM $ modify $
+    \s -> s { relativeBase = relativeBase s + delta }
 
 instance Monad m => MonadInteract (VM m) where
-  input = VM $ state $ \iod@(IOData (x:xs) _) -> ( Just x
-                                                 , iod {inputBuffer = xs}
-                                                 )
+  input = VM $ state $ \iod@(VMData _ (x:xs) _ _) -> ( Just x
+                                                     , iod {inputBuffer = xs}
+                                                     )
   output x = VM $ modify $ \iod -> iod {outputBuffer = x : outputBuffer iod}
 
 
-runInVM :: PrimMonad m => Tape m -> [Int] -> VM m () -> m [Int]
-runInVM tape iBuffer = fmap outputBuffer        .
-                       runR tape                .
-                       runS (IOData iBuffer []) .
-                       runVM
-  where runR = flip runReaderT
-        runS = flip execStateT
+runInVM :: PrimMonad m => Tape m -> [Int] -> VM m () -> m (VMData m)
+runInVM tape iBuffer = runS (VMData tape iBuffer [] 0) . runVM
+  where runS = flip execStateT
 
 
 
@@ -177,9 +214,9 @@ runInVM tape iBuffer = fmap outputBuffer        .
 run :: V.Vector Int -> [Int] -> (V.Vector Int, [Int])
 run tape iBuffer = runST $ do
   mv <- V.thaw tape
-  o  <- runInVM (Tape mv) iBuffer $ exec step
-  v  <- V.freeze mv
-  return (v, reverse o)
+  d  <- runInVM mv iBuffer $ exec step
+  pt <- V.freeze $ programTape d
+  return (pt, reverse $ outputBuffer d)
 
 
 
@@ -188,15 +225,14 @@ run tape iBuffer = runST $ do
 debug :: V.Vector Int -> [Int] -> IO ()
 debug tape iBuffer = do
   mv <- V.thaw tape
-  void $ runInVM (Tape mv) iBuffer $ exec $ \i -> do
+  void $ runInVM mv iBuffer $ exec $ \i -> do
     liftIO . putStrLn =<< showVM i
     step i
 
 showVM :: Int -> VM IO String
 showVM index = VM $ do
-  Tape mv    <- ask
-  IOData i o <- get
-  v <- lift $ lift $ V.toList <$> V.freeze mv
+  VMData mv i o _ <- get
+  v <- lift $ V.toList <$> V.freeze mv
   let chunks  = chunksOf 8 v
       widths    = map (maximum . map (length . show)) $ transpose chunks
       display r c x
@@ -261,6 +297,10 @@ instance PrimMonad m => MonadTape (ConcurrentVM m) where
     p <- gets currentProgram
     v <- asks $ (BV.! p) . getTapes
     lift $ lift $ V.write v index value
+
+instance PrimMonad m => MonadRelativeBase (ConcurrentVM m) where
+  getBase   = undefined
+  addToBase = undefined
 
 instance PrimMonad m => MonadInteract (ConcurrentVM m) where
   input = CVM $ do
