@@ -24,6 +24,7 @@ dependencies:
   - random
   - safe
   - split
+  - string-qq
   - tasty
   - tasty-hunit
   - tasty-quickcheck
