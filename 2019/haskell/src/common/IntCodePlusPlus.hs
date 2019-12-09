@@ -29,9 +29,9 @@ data Statement  = GotoLabel   String
                 | WhileBlock  Condition [Statement]
                 | Goto        String
                 | Jump        Expression
-                | Read        String
+                | Read        (Either String Expression)
                 | Print       Expression
-                | Assign      String Expression
+                | Assign      (Either String Expression) Expression
                 | Padding     Int
                 deriving (Show, Eq)
 
@@ -147,11 +147,16 @@ parseProgram = left show ... parse program
            return $ WhileBlock c b
          goto    = unary "goto"  identifier Goto
          jump    = unary "jump"  expression Jump
-         readI   = unary "read"  identifier Read
+         readI   = unary "read"  nameOrExpr Read
          printI  = unary "print" expression Print
-         assign  = binary "=" identifier expression Assign
          padding = unary "padding" iLiteral $ Padding . fromInteger
+         assign  = binary "=" nameOrExpr expression Assign
 
+         nameOrExpr = tryAll [ Left <$> identifier
+                             , char '$' >> Right . ETerm . TFactor . Variable <$> identifier
+                             , char '@' >> Right . ETerm . TFactor . Literal . fromInteger <$> iLiteral
+                             , char '$' >> Right <$> braces expression
+                             ]
          condition0 = tryAll [ C1 <$> condition1
                              , binary "||" condition1 condition0 BOr
                              , binary "or" condition1 condition0 BOr
@@ -184,8 +189,8 @@ parseProgram = left show ... parse program
                              , Variable <$> identifier
                              , Literal . fromInteger <$> iLiteral
                              , Address . fromInteger <$> (char '@' >> iLiteral)
-                             , Deref . ETerm . TFactor . Variable <$> (char '$' >> identifier)
-                             , Deref <$> (char '$' >> braces expression)
+                             , char '$' >> Deref . ETerm . TFactor . Variable <$> identifier
+                             , char '$' >> Deref <$> braces expression
                              ]
 
 
@@ -278,10 +283,18 @@ appendJump e = do
   p <- evaluate 0 e
   appendInstruction $ JmpTI (Immediate 1) p
 
-appendRead :: String -> Compilation ()
-appendRead n = do
-  registerVar n
-  i <- varAddress n
+appendRead :: Either String Expression -> Compilation ()
+appendRead eve = do
+  i <- case eve of
+         Left  n -> registerVar n >> varAddress n
+         Right e -> do
+           p <- evaluate 0 e
+           case p of
+             Immediate x -> return x
+             _ -> do
+               pos <- gets csPos
+               appendInstruction $ AddI p (Immediate 0) $ pos + 5
+               return (-1)
   appendInstruction $ InI i
 
 appendPrint :: Expression -> Compilation ()
@@ -289,11 +302,19 @@ appendPrint e = do
   p <- evaluate 0 e
   appendInstruction $ OutI p
 
-appendAssign :: String -> Expression -> Compilation ()
-appendAssign n e = do
-  p <- evaluate 0 e
-  i <- varAddress n
-  registerVar n
+appendAssign :: Either String Expression -> Expression -> Compilation ()
+appendAssign eve v = do
+  i <- case eve of
+         Left  n -> registerVar n >> varAddress n
+         Right e -> do
+           p <- evaluate 0 e
+           case p of
+             Immediate x -> return x
+             _ -> do
+               pos <- gets csPos
+               appendInstruction $ AddI p (Immediate 0) $ pos + 7
+               return (-1)
+  p <- evaluate 0 v
   appendInstruction $ AddI p (Immediate 0) i
 
 appendSub :: Param -> Param -> Int -> Int -> Compilation ()
