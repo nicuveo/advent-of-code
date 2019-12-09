@@ -31,7 +31,6 @@ data Statement  = GotoLabel   String
                 | Read        (Either String Expression)
                 | Print       Expression
                 | Assign      (Either String Expression) Expression
-                | Padding     Int
                 deriving (Show, Eq)
 
 data Condition  = C1  Condition1
@@ -87,7 +86,6 @@ language = P.makeTokenParser P.LanguageDef { P.commentStart    = "/*"
                                                                  , "read"
                                                                  , "print"
                                                                  , "goto"
-                                                                 , "padding"
                                                                  , "or"
                                                                  , "and"
                                                                  ]
@@ -130,7 +128,6 @@ parseProgram = left show ... parse program
                             , readI
                             , printI
                             , assign
-                            , padding
                             ] <?> "a statement or a block"
 
          gotoLabel = GotoLabel <$> brackets identifier
@@ -147,7 +144,6 @@ parseProgram = left show ... parse program
          goto    = unary "goto"  nameOrExpr Goto
          readI   = unary "read"  nameOrExpr Read
          printI  = unary "print" expression Print
-         padding = unary "padding" iLiteral $ Padding . fromInteger
          assign  = binary "=" nameOrExpr expression Assign
 
          nameOrExpr = tryAll [ Left <$> identifier
@@ -403,9 +399,6 @@ appendDiv p1 p2 d dest = do
     currentPos >>= \p -> when (p /= pos+96) $ error $ "expected 96 got" ++ show p
     appendInstruction $ AddI (Position res) (Immediate 0) dest
 
-appendPadding :: Int -> Compilation ()
-appendPadding n = sequence_ $ appendVar . printf "padding-%3f" <$> [1..n]
-
 appendVar :: String -> Compilation (String, Int)
 appendVar n = do
   pos <- currentPos
@@ -513,7 +506,6 @@ process = traverse_ step
         step (Read n)         = appendRead n
         step (Print e)        = appendPrint e
         step (Assign n e)     = appendAssign n e
-        step (Padding n)      = appendPadding n
         step (IfBlock c b)    = blockIf c b
         step (WhileBlock c b) = blockWhile c b
 
