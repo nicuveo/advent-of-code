@@ -66,7 +66,7 @@ data Term       = TFactor Factor
 data Factor     = Parenthesized Expression
                 | Variable      String
                 | Literal       Int
-                | Address       Int
+                | Address       (Either Int String)
                 | Deref         Expression
                 deriving (Show, Eq)
 
@@ -188,7 +188,8 @@ parseProgram = left show ... parse program
          factor     = tryAll [ Parenthesized <$> parens expression
                              , Variable <$> identifier
                              , Literal . fromInteger <$> iLiteral
-                             , Address . fromInteger <$> (char '@' >> iLiteral)
+                             , char '@' >> Address . Left . fromInteger <$> iLiteral
+                             , char '&' >> Address . Right <$> identifier
                              , char '$' >> Deref . ETerm . TFactor . Variable <$> identifier
                              , char '$' >> Deref <$> braces expression
                              ]
@@ -464,7 +465,10 @@ evaluate = ee
         et d (Div f1 t2) = binaryOperation ef et div appendDiv d f1 t2
         ef d (Parenthesized e) = ee d e
         ef _ (Literal       i) = return $ Immediate i
-        ef _ (Address       i) = return $ Position  i
+        ef _ (Address       a) = case a of
+                                   Left  i -> return $ Position i
+                                   Right n -> getVar Immediate n
+        ef _ (Variable      n) = getVar Position n
         ef d (Deref         e) = do
           let vName = tempVar d
           registerVar vName
@@ -477,11 +481,10 @@ evaluate = ee
               appendInstruction $ AddI (Position x)    (Immediate 0) $ pos + 5
               appendInstruction $ AddI (Position (-1)) (Immediate 0) dest
           return (Position dest)
-        ef _ (Variable      n) = do
+        getVar f n = do
           whenM (gets $ \s -> n `S.notMember` csLVar s) $
             throwError $ printf "error: variable %s not in scope" n
-          i <- varAddress n
-          return $ Position i
+          f <$> varAddress n
 
 compare :: Condition -> Compilation Param
 compare = ec0 0
