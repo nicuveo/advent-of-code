@@ -26,8 +26,8 @@ exec = snd ... run
 part1 :: Program -> [Int]
 part1 = flip exec [1]
 
-part2 :: Program -> Int
-part2 = undefined
+part2 :: Program -> [Int]
+part2 = flip exec [2]
 
 
 
