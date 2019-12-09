@@ -27,8 +27,7 @@ type Program    = [Statement]
 data Statement  = GotoLabel   String
                 | IfBlock     Condition [Statement]
                 | WhileBlock  Condition [Statement]
-                | Goto        String
-                | Jump        Expression
+                | Goto        (Either String Expression)
                 | Read        (Either String Expression)
                 | Print       Expression
                 | Assign      (Either String Expression) Expression
@@ -112,6 +111,7 @@ binary op p1 p2 c = do
   e1 <- p1
   symbol op
   e2 <- p2
+  whiteSpace
   return $ c e1 e2
 
 unary :: String -> Parser a -> (a -> b) -> Parser b
@@ -127,7 +127,6 @@ parseProgram = left show ... parse program
                             , ifBlock
                             , whileBlock
                             , goto
-                            , jump
                             , readI
                             , printI
                             , assign
@@ -145,8 +144,7 @@ parseProgram = left show ... parse program
            c <- parens condition0
            b <- braces $ many statement
            return $ WhileBlock c b
-         goto    = unary "goto"  identifier Goto
-         jump    = unary "jump"  expression Jump
+         goto    = unary "goto"  nameOrExpr Goto
          readI   = unary "read"  nameOrExpr Read
          printI  = unary "print" expression Print
          padding = unary "padding" iLiteral $ Padding . fromInteger
@@ -228,113 +226,142 @@ instSize Var  {} = 1
 
 
 type PosMapping   = M.Map String Int
-data CompileState = CS { csInst :: [Instruction]
-                       , csVMap :: PosMapping
-                       , csLMap :: PosMapping
-                       , csSVar :: S.Set String
-                       , csLVar :: S.Set String
-                       , csPos  :: Int
-                       , csBN   :: Int
-                       , csBI   :: PosMapping
-                       , csBO   :: PosMapping
+data CompileState = CS { csInstructions :: [Instruction]
+                       , csAllVariables :: S.Set String
+                       , csVarsInScope  :: S.Set String
+                       , csCurrentPos   :: Int
+                       , csBlockIndex   :: Int
+                       , csAddresses    :: PosMapping
+                       -- computed a posteriori (circular programming)
+                       , csMapping      :: PosMapping
                        }
 
 type Compilation = StateT CompileState (Except String)
 
+
 compile :: Program -> Either String [Instruction]
 compile p = res
-  where (vMap, bMap, res) = doCompile $ CS [] vMap M.empty S.empty S.empty 0 0 bMap M.empty
+  where (posMap, res) = doCompile $ CS [] S.empty S.empty 0 0 M.empty posMap
         doCompile s = case runExcept $ evalStateT (process p >> finalize) s of
                         Right x -> x
-                        Left  e -> (M.empty, M.empty, Left e)
+                        Left  e -> (M.empty, Left e)
 
 
-createLabel :: String -> Compilation ()
-createLabel name = do
-  m <- gets csLMap
-  case M.lookup name m of
-    Just _  -> throwError $ printf "error: label [%s] declared twice" name
-    Nothing -> modify $ \s -> s { csLMap = M.insert name (csPos s) $ csLMap s }
+isVarInScope :: String -> Compilation Bool
+isVarInScope n = gets $ S.member n . csVarsInScope
+
+getAddress :: String -> Compilation Int
+getAddress name = do
+  m <- gets csMapping
+  return $ m M.! name
+
+getTempVar :: Int -> Compilation Int
+getTempVar d = do
+  let n = '$' : show d
+  registerVar n
+  getAddress  n
+
+getLabel :: String -> Compilation Int
+getLabel l = getAddress $ '~' : l
+
+
+currentPos :: Compilation Int
+currentPos = gets csCurrentPos
+
 
 registerVar :: String -> Compilation ()
-registerVar v = modify $ \s -> s { csSVar = S.insert v $ csSVar s
-                                 , csLVar = S.insert v $ csLVar s
-                                 }
+registerVar v = modify $ \s ->
+  s { csAllVariables = S.insert v $ csAllVariables s
+    , csVarsInScope  = S.insert v $ csVarsInScope  s
+    }
 
-tempVar :: Int -> String
-tempVar x = '$' : show x
+registerLabel :: String -> Compilation ()
+registerLabel name = do
+  m <- gets csAddresses
+  p <- currentPos
+  case M.lookup name m of
+    Just _  -> throwError $ printf "error: label [%s] declared twice" name
+    Nothing -> modify $ \s -> s { csAddresses = M.insert ('~' : name) p $ csAddresses s }
 
-varAddress :: String -> Compilation Int
-varAddress n = (M.! n) <$> gets csVMap
+startBlock :: Compilation String
+startBlock = do
+  blockNumber <- gets csBlockIndex
+  modify $ \s -> s { csBlockIndex = csBlockIndex s + 1 }
+  return $ '>' : show blockNumber
+
+finishBlock :: String -> Compilation ()
+finishBlock bname = do
+  p <- currentPos
+  modify $ \s -> s { csAddresses = M.insert bname p $ csAddresses s }
+
 
 appendInstruction :: Instruction -> Compilation ()
-appendInstruction i = modify $ \s -> s { csInst = i : csInst s
-                                       , csPos  = csPos s + instSize i
-                                       }
+appendInstruction i = modify $ \s ->
+  s { csInstructions = i : csInstructions s
+    , csCurrentPos   = csCurrentPos s + instSize i
+    }
 
-appendGoto :: String -> Compilation ()
-appendGoto name = do
-  m <- gets csLMap
-  case M.lookup name m of
-    Nothing -> throwError $ printf "error: unknown label [%s]" name
-    Just p  -> appendInstruction $ JmpTI (Immediate 1) $ Immediate p
-
-appendJump :: Expression -> Compilation ()
-appendJump e = do
-  p <- evaluate 0 e
-  appendInstruction $ JmpTI (Immediate 1) p
-
-appendRead :: Either String Expression -> Compilation ()
-appendRead eve = do
-  i <- case eve of
-         Left  n -> registerVar n >> varAddress n
-         Right e -> do
-           p <- evaluate 0 e
-           case p of
-             Immediate x -> return x
-             _ -> do
-               pos <- gets csPos
-               appendInstruction $ AddI p (Immediate 0) $ pos + 5
-               return (-1)
-  appendInstruction $ InI i
+appendGoto :: Either String Expression -> Compilation ()
+appendGoto a = case a of
+  Left name  -> do
+    l <- getLabel name
+    appendInstruction $ JmpTI (Immediate 1) $ Immediate l
+  Right expr -> do
+    p <- evaluate 0 expr
+    appendInstruction $ JmpTI (Immediate 1) p
 
 appendPrint :: Expression -> Compilation ()
 appendPrint e = do
   p <- evaluate 0 e
   appendInstruction $ OutI p
 
+inferAddress :: Either String Expression -> Int -> Compilation Int
+inferAddress eve offset = case eve of
+  Left  n -> registerVar n >> getAddress n
+  Right e -> do
+    p <- evaluate 0 e
+    case p of
+      Immediate x -> return x
+      _           -> do
+        pos <- currentPos
+        appendInstruction $ AddI p (Immediate 0) $ pos + offset
+        return (-1)
+
+appendRead :: Either String Expression -> Compilation ()
+appendRead eve = do
+  i <- inferAddress eve 5
+  appendInstruction $ InI i
+
 appendAssign :: Either String Expression -> Expression -> Compilation ()
 appendAssign eve v = do
-  i <- case eve of
-         Left  n -> registerVar n >> varAddress n
-         Right e -> do
-           p <- evaluate 0 e
-           case p of
-             Immediate x -> return x
-             _ -> do
-               pos <- gets csPos
-               appendInstruction $ AddI p (Immediate 0) $ pos + 7
-               return (-1)
+  i <- inferAddress eve 7
   p <- evaluate 0 v
   appendInstruction $ AddI p (Immediate 0) i
 
+appendNot :: Param -> Compilation Param
+appendNot (Immediate x) = return $ Immediate $ 1 - signum x
+appendNot (Position  x) = do
+  pos <- currentPos
+  appendInstruction $ JmpTI (Position  x) $ Immediate $ pos + 10
+  appendInstruction $ AddI  (Immediate 0) (Immediate 1) x
+  appendInstruction $ JmpTI (Immediate 1) $ Immediate $ pos + 14
+  appendInstruction $ AddI  (Immediate 0) (Immediate 0) x
+  return $ Position x
+
 appendSub :: Param -> Param -> Int -> Int -> Compilation ()
 appendSub p1 p2 d dest = do
-  let tmpVar = tempVar $ d + 2
-  registerVar tmpVar
-  tmp <- varAddress tmpVar
+  tmp <- getTempVar $ d + 2
   appendInstruction $ MulI p2 (Immediate (-1)) tmp
   appendInstruction $ AddI p1 (Position tmp)   dest
 
 appendDiv :: Param -> Param -> Int -> Int -> Compilation ()
 appendDiv p1 p2 d dest = do
-    pos <- gets csPos
-    traverse_ (registerVar . tempVar) [d+2 .. d+6]
-    res <- varAddress $ tempVar $ d + 2
-    acc <- varAddress $ tempVar $ d + 3
-    tmp <- varAddress $ tempVar $ d + 4
-    a   <- varAddress $ tempVar $ d + 5
-    b   <- varAddress $ tempVar $ d + 6
+    pos <- currentPos
+    res <- getTempVar $ d + 2
+    acc <- getTempVar $ d + 3
+    tmp <- getTempVar $ d + 4
+    a   <- getTempVar $ d + 5
+    b   <- getTempVar $ d + 6
 
     -- pos +  0: test that p2 /= 0
     appendInstruction $ JmpTI p2 $ Immediate $ pos + 6
@@ -347,87 +374,69 @@ appendDiv p1 p2 d dest = do
     appendInstruction $ MulI  (Immediate (-1)) (Position a) a
     appendInstruction $ MulI  (Immediate (-1)) (Position b) b
     -- pos + 29: test whether b < 0
-    gets csPos >>= \p -> when (p /= pos+29) $ error $ "expected 29 got" ++ show p
+    currentPos >>= \p -> when (p /= pos+29) $ error $ "expected 29 got" ++ show p
     appendInstruction $ LtI   (Position b) (Immediate 0) tmp
     appendInstruction $ JmpTI (Position tmp) $ Immediate $ pos + 66
     -- pos + 36: same sign
-    gets csPos >>= \p -> when (p /= pos+36) $ error $ "expected 36 got" ++ show p
+    currentPos >>= \p -> when (p /= pos+36) $ error $ "expected 36 got" ++ show p
     appendInstruction $ AddI  (Immediate 0)  (Immediate (-1)) res
     appendInstruction $ AddI  (Immediate 0)  (Immediate 0)    acc
     appendInstruction $ AddI  (Immediate 1)  (Position a)     a
-    gets csPos >>= \p -> when (p /= pos+48) $ error $ "expected 48 got" ++ show p
+    currentPos >>= \p -> when (p /= pos+48) $ error $ "expected 48 got" ++ show p
     appendInstruction $ LtI   (Position acc) (Position a)     tmp
     appendInstruction $ JmpFI (Position tmp) $ Immediate $ pos + 96
     appendInstruction $ AddI  (Position res) (Immediate 1)    res
     appendInstruction $ AddI  (Position acc) (Position  b)    acc
     appendInstruction $ JmpTI (Immediate 1)  $ Immediate $ pos + 48
     -- pos + 66: diff sign
-    gets csPos >>= \p -> when (p /= pos+66) $ error $ "expected 66 got" ++ show p
+    currentPos >>= \p -> when (p /= pos+66) $ error $ "expected 66 got" ++ show p
     appendInstruction $ AddI  (Immediate 0)    (Immediate 0)    res
     appendInstruction $ AddI  (Immediate 0)    (Immediate 0)    acc
     appendInstruction $ MulI  (Immediate (-1)) (Position  b)    b
-    gets csPos >>= \p -> when (p /= pos+78) $ error $ "expected 78 got" ++ show p
+    currentPos >>= \p -> when (p /= pos+78) $ error $ "expected 78 got" ++ show p
     appendInstruction $ LtI   (Position acc)   (Position a)     tmp
     appendInstruction $ JmpFI (Position tmp) $ Immediate $ pos + 96
     appendInstruction $ AddI  (Position res)   (Immediate (-1)) res
     appendInstruction $ AddI  (Position acc)   (Position  b)    acc
     appendInstruction $ JmpTI (Immediate 1)  $ Immediate $ pos + 78
     -- pos + 96: end
-    gets csPos >>= \p -> when (p /= pos+96) $ error $ "expected 96 got" ++ show p
+    currentPos >>= \p -> when (p /= pos+96) $ error $ "expected 96 got" ++ show p
     appendInstruction $ AddI (Position res) (Immediate 0) dest
 
-
-appendNot :: Param -> Compilation Param
-appendNot (Immediate x) = return $ Immediate $ 1 - signum x
-appendNot (Position  x) = do
-  pos <- gets csPos
-  appendInstruction $ JmpTI (Position  x) $ Immediate $ pos + 10
-  appendInstruction $ AddI  (Immediate 0) (Immediate 1) x
-  appendInstruction $ JmpTI (Immediate 1) $ Immediate $ pos + 14
-  appendInstruction $ AddI  (Immediate 0) (Immediate 0) x
-  return $ Position x
-
-
 appendPadding :: Int -> Compilation ()
-appendPadding n = sequence_ [appendInstruction $ Var $ printf "padding-%3f" i | i <- [1..n]]
+appendPadding n = sequence_ $ appendVar . printf "padding-%3f" <$> [1..n]
 
 appendVar :: String -> Compilation (String, Int)
 appendVar n = do
-  pos <- gets csPos
+  pos <- currentPos
   appendInstruction $ Var n
   return (n, pos)
 
-startBlock :: Compilation String
-startBlock = do
-  blockNumber <- gets csBN
-  modify $ \s -> s { csBN = csBN s + 1 }
-  return $ '@' : show blockNumber
+restrictScope :: Compilation () -> Compilation ()
+restrictScope action = do
+  currentScope <- gets csVarsInScope
+  action
+  modify $ \s -> s { csVarsInScope = currentScope }
 
 blockIf :: Condition -> [Statement] -> Compilation ()
 blockIf c b = do
-  varsInScope <- gets csLVar
-  eobName     <- startBlock
-  p           <- compare c
-  eob         <- gets $ \s -> csBI s M.! eobName
+  iname <- startBlock
+  p     <- compare c
+  eob   <- getAddress iname
   appendInstruction $ JmpFI p $ Immediate eob
-  process b
-  modify $ \s -> s { csLVar = varsInScope
-                   , csBO = M.insert eobName (csPos s) $ csBO s
-                   }
+  restrictScope $ process b
+  finishBlock iname
 
 blockWhile :: Condition -> [Statement] -> Compilation ()
 blockWhile c b = do
-  varsInScope <- gets csLVar
-  eobName     <- startBlock
-  startPos    <- gets csPos
-  p           <- compare c
-  eob         <- gets $ \s -> csBI s M.! eobName
+  wname    <- startBlock
+  startPos <- currentPos
+  p        <- compare c
+  eob      <- getAddress wname
   appendInstruction $ JmpFI p $ Immediate eob
-  process b
+  restrictScope $ process b
   appendInstruction $ JmpTI (Immediate 1) $ Immediate startPos
-  modify $ \s -> s { csLVar = varsInScope
-                   , csBO = M.insert eobName (csPos s) $ csBO s
-                   }
+  finishBlock wname
 
 
 binaryOperation :: (Int -> a -> Compilation Param)
@@ -441,9 +450,7 @@ binaryOperation eval1 eval2 (#) doI d e1 e2 = do
   case (p1, p2) of
     (Immediate x, Immediate y) -> return $ Immediate $ x # y
     _ -> do
-      let vName = tempVar d
-      registerVar vName
-      dest <- varAddress vName
+      dest <- getTempVar d
       doI p1 p2 d dest
       return (Position dest)
 
@@ -470,21 +477,18 @@ evaluate = ee
                                    Right n -> getVar Immediate n
         ef _ (Variable      n) = getVar Position n
         ef d (Deref         e) = do
-          let vName = tempVar d
-          registerVar vName
-          dest <- varAddress vName
+          dest <- getTempVar d
           p    <- evaluate d e
           case p of
             Immediate x -> appendInstruction $ AddI (Position x) (Immediate 0) dest
             Position  x -> do
-              pos <- gets csPos
+              pos <- currentPos
               appendInstruction $ AddI (Position x)    (Immediate 0) $ pos + 5
               appendInstruction $ AddI (Position (-1)) (Immediate 0) dest
           return (Position dest)
         getVar f n = do
-          whenM (gets $ \s -> n `S.notMember` csLVar s) $
-            throwError $ printf "error: variable %s not in scope" n
-          f <$> varAddress n
+          unlessM (isVarInScope n) $ throwError $ printf "error: variable %s not in scope" n
+          f <$> getAddress n
 
 compare :: Condition -> Compilation Param
 compare = ec0 0
@@ -498,15 +502,14 @@ compare = ec0 0
         ec2 d (CLT e1 e2)        = bbi (<)  LtI d e1 e2
         ec2 d (CNE e1 e2)        = bbi (==) EqI d e1 e2 >>= appendNot
         ec2 d (CGE e1 e2)        = bbi (<)  LtI d e1 e2 >>= appendNot
-        ec2 d (CLE e1 e2)        = ec0 d $ BOr (C2 $ CLT e1 e2) (C1 $ C2 $ CEQ e1 e2)
-        ec2 d (CGT e1 e2)        = ec2 d (CLE e1 e2) >>= appendNot
+        ec2 d (CLE e1 e2)        = ec2 d (CGE e2 e1)
+        ec2 d (CGT e1 e2)        = ec2 d (CLT e2 e1)
         bbi op = binaryInstruction evaluate evaluate $ fromEnum ... op
 
 process :: [Statement] -> Compilation ()
 process = traverse_ step
-  where step (GotoLabel n)    = createLabel n
+  where step (GotoLabel n)    = registerLabel n
         step (Goto l)         = appendGoto l
-        step (Jump e)         = appendJump e
         step (Read n)         = appendRead n
         step (Print e)        = appendPrint e
         step (Assign n e)     = appendAssign n e
@@ -514,13 +517,16 @@ process = traverse_ step
         step (IfBlock c b)    = blockIf c b
         step (WhileBlock c b) = blockWhile c b
 
-finalize :: Compilation (PosMapping, PosMapping, Either String [Instruction])
+finalize :: Compilation (PosMapping, Either String [Instruction])
 finalize = do
   appendInstruction End
-  vMap  <- fmap M.fromList $ traverse appendVar . S.toList =<< gets csSVar
-  bMap  <- gets csBO
-  insts <- gets csInst
-  return (vMap, bMap, Right $ reverse insts)
+  otherAddresses <- gets csAddresses
+  allVars        <- gets csAllVariables
+  varAddresses   <- fmap M.fromList $ traverse appendVar $ S.toList allVars
+  instructions   <- gets csInstructions
+  let allAdresses = M.unionWithKey failDuplicate varAddresses otherAddresses
+  return (allAdresses, Right $ reverse instructions)
+  where failDuplicate k a1 a2 = error $ printf "ICE: duplicate address %s: %d and %d" k a1 a2
 
 
 
