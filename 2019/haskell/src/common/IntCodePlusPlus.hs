@@ -311,27 +311,27 @@ appendPrint e = do
   p <- evaluate 0 e
   appendInstruction $ OutI p
 
-inferAddress :: Either String Expression -> Int -> Compilation Int
-inferAddress eve offset = case eve of
+inferAddress :: Either String Expression -> Int -> Int -> Compilation Int
+inferAddress eve d offset = case eve of
   Left  n -> registerVar n >> getAddress n
   Right e -> do
-    p <- evaluate 0 e
+    p <- evaluate d e
     case p of
       Immediate x -> return x
       _           -> do
         pos <- currentPos
         appendInstruction $ AddI p (Immediate 0) $ pos + offset
-        return (-1)
+        return (-42)
 
 appendRead :: Either String Expression -> Compilation ()
 appendRead eve = do
-  i <- inferAddress eve 5
+  i <- inferAddress eve 0 5
   appendInstruction $ InI i
 
 appendAssign :: Either String Expression -> Expression -> Compilation ()
 appendAssign eve v = do
-  i <- inferAddress eve 7
   p <- evaluate 0 v
+  i <- inferAddress eve 1 7
   appendInstruction $ AddI p (Immediate 0) i
 
 appendNot :: Param -> Compilation Param
@@ -361,7 +361,7 @@ appendDiv p1 p2 d dest = do
 
     -- pos +  0: test that p2 /= 0
     appendInstruction $ JmpTI p2 $ Immediate $ pos + 6
-    appendInstruction $ JmpTI (Immediate 1) $ Immediate (-1) -- crash the program
+    appendInstruction $ JmpTI (Immediate 1) $ Immediate (-10) -- crash the program
     appendInstruction $ AddI p1 (Immediate 0) a
     appendInstruction $ AddI p2 (Immediate 0) b
     -- pos + 14: if a < 0, switch both signs
@@ -476,8 +476,8 @@ evaluate = ee
             Immediate x -> appendInstruction $ AddI (Position x) (Immediate 0) dest
             Position  x -> do
               pos <- currentPos
-              appendInstruction $ AddI (Position x)    (Immediate 0) $ pos + 5
-              appendInstruction $ AddI (Position (-1)) (Immediate 0) dest
+              appendInstruction $ AddI (Position x)     (Immediate 0) $ pos + 5
+              appendInstruction $ AddI (Position (-64)) (Immediate 0) dest
           return (Position dest)
         getVar f n = do
           unlessM (isVarInScope n) $ throwError $ printf "error: variable %s not in scope" n
