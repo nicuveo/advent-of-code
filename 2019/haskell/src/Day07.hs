@@ -1,30 +1,30 @@
 -- import
 
-import           Data.Function (on)
 import           Data.List
-import           Data.Maybe
-import           Text.Parsec
+import           Data.List.Split
+import qualified Data.Vector.Unboxed as V
 
 import           AOC
+import           IntCode
 
 
 
 -- input
 
-type Input = String
+type Input = V.Vector Int
 
 parseInput :: String -> Input
-parseInput = map parseLine . lines
-  where parseLine = parseWith line
-        line = undefined
+parseInput = V.fromList . map read . splitOn ","
 
 
 
 -- solution
 
-part1 :: Input -> String
-part1 = undefined
-  where f = undefined
+part1 :: Input -> Int
+part1 program = maximum $ map computeOutput $ permutations [0,1,2,3,4]
+  where computeOutput = foldl executeOnce 0
+        executeOnce signal ps = head $ snd $ run program [ps, signal]
+
 
 part2 :: Input -> String
 part2 = undefined
