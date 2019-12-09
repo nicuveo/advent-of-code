@@ -4,6 +4,7 @@ import qualified Data.Vector.Unboxed as V
 
 import           AOC
 import           IntCode
+import           IntCodeMeta
 import           IntCodePlusPlus
 
 
@@ -20,6 +21,7 @@ parseInput = map read . lines
 -- intcode++
 
 program :: String
+
 program = unlines [ "index = 6"
                   , "print @8"
                   , "@8 = 42"
@@ -37,7 +39,6 @@ program = unlines [ "index = 6"
                   , "}"
                   , "print total"
                   ]
-
 
 
 -- solution
@@ -61,8 +62,16 @@ main = aocMain 1 $ \rawInput -> do
   print $ part1 input
   print $ part2 input
 
-  let ic = either error id $ transpile "day01" program
-  print ic
-  let (p, o) = run (V.fromList ic) (input ++ [-1])
-  print p
-  print o
+  -- let ic = either error id $ transpile "day01" program
+  -- print ic
+  -- let (p, o) = run (V.fromList ic) (input ++ [-1])
+  -- print p
+  -- print o
+
+  let interpreter   = makeInterpreter ++ replicate 1000 0
+      compiled      = either error id $ transpile "day01" program
+      combinedInput = length compiled : compiled ++ input ++ [-1]
+  print $ length interpreter
+  print compiled
+  print $ snd $ run (V.fromList compiled) $ input ++ [-1]
+  print $ snd $ run (V.fromList interpreter) combinedInput
