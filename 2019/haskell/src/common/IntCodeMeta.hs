@@ -7,7 +7,7 @@ import           IntCodePlusPlus
 
 makeInterpreter :: [Int]
 makeInterpreter = either error id $ transpile "interpreter" [s|
-base  = 2580
+base  = 3000
 index = 0
 read size
 while (index < size) {
