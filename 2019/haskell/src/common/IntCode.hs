@@ -3,7 +3,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ParallelListComp           #-}
 
-module IntCode (run, debug) where
+module IntCode (run, debug, runConcurrently) where
 
 
 
@@ -16,8 +16,9 @@ import           Control.Monad.ST
 import           Control.Monad.State
 import           Data.List                   (intercalate, transpose)
 import           Data.List.Split             (chunksOf)
+import qualified Data.Vector                 as BV
 import qualified Data.Vector.Unboxed         as V
-import qualified Data.Vector.Unboxed.Mutable as V
+import qualified Data.Vector.Unboxed.Mutable as V hiding (replicate)
 import           Prelude                     hiding (read)
 import           Text.Printf
 
@@ -33,7 +34,7 @@ class Monad m => MonadTape m where
   write :: Int -> Int -> m ()
 
 class Monad m => MonadInteract m where
-  input  :: m Int
+  input  :: m (Maybe Int)
   output :: Int -> m ()
 
 
@@ -78,8 +79,12 @@ eqI = binaryI $ fromEnum ... (==)
 
 inI :: (MonadTape m, MonadInteract m) => Instruction m
 inI index _ = do
-  writeAt (index + 1) =<< input
-  return $ index + 2
+  value <- input
+  case value of
+    Nothing -> return index
+    Just x  -> do
+      writeAt (index + 1) x
+      return $ index + 2
 
 outI :: (MonadTape m, MonadInteract m) => Instruction m
 outI _ [] = error "outI: empty mode list"
@@ -151,7 +156,9 @@ instance PrimMonad m => MonadTape (VM m) where
     lift $ lift $ V.write v index value
 
 instance Monad m => MonadInteract (VM m) where
-  input = VM $ state $ \iod@(IOData (x:xs) _) -> (x, iod {inputBuffer = xs})
+  input = VM $ state $ \iod@(IOData (x:xs) _) -> ( Just x
+                                                 , iod {inputBuffer = xs}
+                                                 )
   output x = VM $ modify $ \iod -> iod {outputBuffer = x : outputBuffer iod}
 
 
@@ -205,3 +212,111 @@ showVM index = VM $ do
                           | r    <- [0..]
                           | line <- chunks
                           ]
+
+
+
+-- concurrent vm
+
+newtype Tapes m =
+  Tapes { getTapes :: BV.Vector (V.MVector (PrimState m) Int) }
+
+data ConcurrentInfo = CI { inputBuffers        :: BV.Vector [Int]
+                         , currentProgram      :: Int
+                         , instructionPointers :: BV.Vector (Maybe Int)
+                         }
+
+newtype ConcurrentVM m a =
+  CVM { runCVM :: StateT ConcurrentInfo (ReaderT (Tapes m) m) a }
+  deriving ( Functor, Applicative, Monad
+           , MonadState ConcurrentInfo
+           , MonadReader (Tapes m)
+           , MonadIO
+           )
+
+
+programAfterCurrent :: PrimMonad m => ConcurrentVM m Int
+programAfterCurrent = do
+  p <- gets currentProgram
+  n <- asks $ BV.length . getTapes
+  return $ mod (p+1) n
+
+goToNextProgram :: PrimMonad m => ConcurrentVM m ()
+goToNextProgram = do
+  p <- programAfterCurrent
+  modify $ \s -> s { currentProgram = p }
+
+setInstructionPointer :: PrimMonad m => Maybe Int -> ConcurrentVM m ()
+setInstructionPointer x = do
+  p  <- gets currentProgram
+  ps <- gets instructionPointers
+  modify $ \s -> s { instructionPointers = ps BV.// [(p,x)]}
+
+
+instance PrimMonad m => MonadTape (ConcurrentVM m) where
+  read index = CVM $ do
+    p <- gets currentProgram
+    v <- asks $ (BV.! p) . getTapes
+    lift $ lift $ V.read v index
+  write index value = CVM $ do
+    p <- gets currentProgram
+    v <- asks $ (BV.! p) . getTapes
+    lift $ lift $ V.write v index value
+
+instance PrimMonad m => MonadInteract (ConcurrentVM m) where
+  input = CVM $ do
+    p  <- gets currentProgram
+    ib <- gets $ (BV.! p) . inputBuffers
+    case ib of
+      []     -> return Nothing
+      (x:xs) -> do
+        modify $ \s -> s {inputBuffers = inputBuffers s BV.// [(p,xs)]}
+        return $ Just x
+  output x = do
+    target <- programAfterCurrent
+    modify $ \s ->
+      s {inputBuffers = inputBuffers s BV.// [
+            (target, (inputBuffers s BV.! target) ++ [x])
+            ]}
+
+
+runInConcurrentVM :: PrimMonad m        =>
+                     Tapes m            ->
+                     BV.Vector [Int]    ->
+                     ConcurrentVM m Int ->
+                     m Int
+runInConcurrentVM tapes iBuffers = runR tapes . runS baseState . runCVM
+  where runR = flip runReaderT
+        runS = flip evalStateT
+        baseState = CI iBuffers 0 $ BV.map (const $ Just 0) iBuffers
+
+stepConcurrent :: PrimMonad m => ConcurrentVM m (Maybe Int)
+stepConcurrent = do
+  prog         <- gets currentProgram
+  maybePointer <- gets $ (BV.! prog) . instructionPointers
+  case maybePointer of
+    Nothing -> do
+      out <- gets $ (BV.! prog) . inputBuffers
+      return $ Just $ head out
+    Just ip -> do
+      np <- step ip
+      case np of
+        Nothing -> do
+          setInstructionPointer Nothing
+          goToNextProgram
+        Just x  -> if x /= ip
+                   then setInstructionPointer $ Just x
+                   else goToNextProgram
+      return Nothing
+
+execConcurrently :: PrimMonad m => ConcurrentVM m Int
+execConcurrently = do
+  mResult <- stepConcurrent
+  case mResult of
+    Nothing -> execConcurrently
+    Just  x -> return x
+
+runConcurrently :: V.Vector Int -> BV.Vector [Int] -> Int
+runConcurrently prog ibs = runST $ do
+  let n = BV.length ibs
+  tapes <- fmap Tapes $ traverse V.thaw $ BV.replicate n prog
+  runInConcurrentVM tapes ibs execConcurrently

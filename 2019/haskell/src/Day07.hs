@@ -2,6 +2,7 @@
 
 import           Data.List
 import           Data.List.Split
+import qualified Data.Vector         as BV
 import qualified Data.Vector.Unboxed as V
 
 import           AOC
@@ -26,9 +27,11 @@ part1 program = maximum $ map computeOutput $ permutations [0,1,2,3,4]
         executeOnce signal ps = head $ snd $ run program [ps, signal]
 
 
-part2 :: Input -> String
-part2 = undefined
-  where f = undefined
+part2 :: Input -> Int
+part2 program = maximum $ map computeOutput $ permutations [5,6,7,8,9]
+  where computeOutput (p:ps) =
+          runConcurrently program $ BV.fromList $ [p, 0] : map pure ps
+        computeOutput _ = error "wat"
 
 
 
