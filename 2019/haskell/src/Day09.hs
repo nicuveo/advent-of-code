@@ -1,41 +1,40 @@
 -- import
 
-import           Data.Function (on)
-import           Data.List
-import           Data.Maybe
-import           Text.Parsec
+import           Data.List.Split
+import qualified Data.Vector.Unboxed as V
 
 import           AOC
+import           IntCode
 
 
 
 -- input
 
-type Input = String
+type Program = V.Vector Int
 
-parseInput :: String -> Input
-parseInput = map parseLine . lines
-  where parseLine = parseWith line
-        line = undefined
+parseProgram :: String -> Program
+parseProgram = V.fromList . map read . splitOn ","
 
 
 
 -- solution
 
-part1 :: Input -> String
-part1 = undefined
-  where f = undefined
+exec :: Program -> [Int] -> [Int]
+exec = snd ... run
 
-part2 :: Input -> String
+
+part1 :: Program -> [Int]
+part1 = flip exec [1]
+
+part2 :: Program -> Int
 part2 = undefined
-  where f = undefined
 
 
 
 -- main
 
 main :: IO ()
-main = aocMain 9 $ \rawInput -> do
-  let input = parseInput rawInput
+main = aocMain 9 $ \rawProgram -> do
+  let input = parseProgram rawProgram
   print $ part1 input
   print $ part2 input
