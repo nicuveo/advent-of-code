@@ -20,7 +20,16 @@ parseInput = map read . lines
 -- intcode++
 
 program :: String
-program = unlines [ "read mass"
+program = unlines [ "index = 6"
+                  , "print @8"
+                  , "@8 = 42"
+                  , "print @8"
+                  , "print $index"
+                  , "$index = 42"
+                  , "print $index"
+                  , "print &index"
+                  , "print index"
+                  , "read mass"
                   , "total = 0"
                   , "while (mass >= 0) {"
                   , "  total = total + mass / 3 - 2"
@@ -51,8 +60,9 @@ main = aocMain 1 $ \rawInput -> do
   let input = parseInput rawInput
   print $ part1 input
   print $ part2 input
-  print $ parseProgram "day01" program
-  print $ compile =<< parseProgram "day01" program
+
   let ic = either error id $ transpile "day01" program
   print ic
-  print $ run (V.fromList ic) (input ++ [-1])
+  let (p, o) = run (V.fromList ic) (input ++ [-1])
+  print p
+  print o
