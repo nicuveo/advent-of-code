@@ -151,68 +151,76 @@ if ($index == 1106) {
 
 // LESS THAN
 if ($index ==    7) {
-  ${base + ${index + 3}} = 0
+  tmp = 0
   if (${base + ${index + 1}} < ${base + ${index + 2}}) {
-    ${base + ${index + 3}} = 1
+    tmp = 1
   }
+  ${base + ${index + 3}} = tmp
   index = index + 4
   goto loop
 }
 if ($index ==  107) {
-  ${base + ${index + 3}} = 0
+  tmp = 0
   if (${index + 1} < ${base + ${index + 2}}) {
-    ${base + ${index + 3}} = 1
+    tmp = 1
   }
+  ${base + ${index + 3}} = tmp
   index = index + 4
   goto loop
 }
 if ($index == 1007) {
-  ${base + ${index + 3}} = 0
+  tmp = 0
   if (${base + ${index + 1}} < ${index + 2}) {
-    ${base + ${index + 3}} = 1
+    tmp = 1
   }
+  ${base + ${index + 3}} = tmp
   index = index + 4
   goto loop
 }
 if ($index == 1107) {
-  ${base + ${index + 3}} = 0
+  tmp = 0
   if (${index + 1} < ${index + 2}) {
-    ${base + ${index + 3}} = 1
+    tmp = 1
   }
+  ${base + ${index + 3}} = tmp
   index = index + 4
   goto loop
 }
 
 // EQUALS
 if ($index ==    8) {
-  ${base + ${index + 3}} = 0
+  tmp = 0
   if (${base + ${index + 1}} == ${base + ${index + 2}}) {
-    ${base + ${index + 3}} = 1
+    tmp = 1
   }
+  ${base + ${index + 3}} = tmp
   index = index + 4
   goto loop
 }
 if ($index ==  108) {
-  ${base + ${index + 3}} = 0
+  tmp = 0
   if (${index + 1} == ${base + ${index + 2}}) {
-    ${base + ${index + 3}} = 1
+    tmp = 1
   }
+  ${base + ${index + 3}} = tmp
   index = index + 4
   goto loop
 }
 if ($index == 1008) {
-  ${base + ${index + 3}} = 0
+  tmp = 0
   if (${base + ${index + 1}} == ${index + 2}) {
-    ${base + ${index + 3}} = 1
+    tmp = 1
   }
+  ${base + ${index + 3}} = tmp
   index = index + 4
   goto loop
 }
 if ($index == 1108) {
-  ${base + ${index + 3}} = 0
+  tmp = 0
   if (${index + 1} == ${index + 2}) {
-    ${base + ${index + 3}} = 1
+    tmp = 1
   }
+  ${base + ${index + 3}} = tmp
   index = index + 4
   goto loop
 }
@@ -223,7 +231,7 @@ if ($index == 99) {
 }
 
 // UNKNOWN OPCODE
-goto @-1
+goto @-101
 
 [end]
 |]
