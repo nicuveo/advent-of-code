@@ -16,6 +16,7 @@ dependencies:
   - data-has
   - extra
   - filepath
+  - lens
   - monad-loops
   - mtl
   - parsec
