@@ -11,6 +11,6 @@ if test -n "$GHCOPTS"; then
    opts="--ghc-options $GHCOPTS"
 fi
 
-stack build --verbosity=warn $opts aoc2019:$exe
+stack build $opts aoc2019:$exe
 ulimit -v 7000000 -m 7000000
 stack exec $exe -- $arg "$@"
