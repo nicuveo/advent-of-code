@@ -14,10 +14,6 @@ module IntCode ( run
                , debug
                ) where
 
-
-
--- import
-
 import           Control.Lens                hiding (index, ( # ), (...))
 import           Control.Monad.Extra
 import           Control.Monad.Primitive
@@ -81,40 +77,17 @@ writeAs Relative  p x = readRelative p >>= \i -> writeTape i x
 
 type Instruction m = Int -> (Mode,Mode,Mode) -> m Int
 
+unary :: MonadIntCode m => Int -> Mode -> (Int -> m ()) -> m Int
+unary index mode f = do
+  f =<< readAs mode (index + 1)
+  return $ index + 2
+
 binaryI :: MonadIntCode m => (Int -> Int -> Int) -> Instruction m
 binaryI (#) index (m1,m2,m3) = do
   a <- readAs m1 $ index + 1
   b <- readAs m2 $ index + 2
   writeAs m3 (index + 3) $ a # b
   return $ index + 4
-
-addI :: MonadIntCode m => Instruction m
-addI = binaryI (+)
-
-mulI :: MonadIntCode m => Instruction m
-mulI = binaryI (*)
-
-ltI :: MonadIntCode m => Instruction m
-ltI = binaryI $ fromEnum ... (<)
-
-eqI :: MonadIntCode m => Instruction m
-eqI = binaryI $ fromEnum ... (==)
-
-
-inI :: MonadIntCode m => Instruction m
-inI index (m,_,_) = do
-  value <- input
-  case value of
-    Nothing -> return index
-    Just x  -> do
-      writeAs m (index + 1) x
-      return $ index + 2
-
-outI :: MonadIntCode m => Instruction m
-outI index (m,_,_) = do
-  output =<< readAs m (index + 1)
-  return $ index + 2
-
 
 jumpI :: MonadIntCode m => (Int -> Bool) -> Instruction m
 jumpI shouldJump index (m1,m2,_) = do
@@ -123,17 +96,24 @@ jumpI shouldJump index (m1,m2,_) = do
     then readAs m2 $ index + 2
     else return $ index + 3
 
-jmpTI :: MonadIntCode m => Instruction m
-jmpTI = jumpI (/= 0)
+addI, mulI, ltI, eqI, jmpTI, jmpFI, inI, outI, rbI :: MonadIntCode m => Instruction m
 
-jmpFI :: MonadIntCode m => Instruction m
+addI  = binaryI (+)
+mulI  = binaryI (*)
+ltI   = binaryI $ fromEnum ... (<)
+eqI   = binaryI $ fromEnum ... (==)
+jmpTI = jumpI (/= 0)
 jmpFI = jumpI (== 0)
 
-
-rbI :: MonadIntCode m => Instruction m
-rbI index (m,_,_) = do
-  addToBase =<< readAs m (index + 1)
-  return $ index + 2
+inI index (m,_,_) = do
+  value <- input
+  case value of
+    Nothing -> return index
+    Just x  -> do
+      writeAs m (index + 1) x
+      return $ index + 2
+outI index (m,_,_) = unary index m output
+rbI  index (m,_,_) = unary index m addToBase
 
 
 
@@ -220,7 +200,9 @@ instance PrimMonad m => MonadIntCode (VM m) where
   addToBase delta = relativeBase += delta
 
   input = vmLift =<< asks inF
-  output x = vmLift . ($ x) =<< asks outF
+  output x = do
+    f <- asks outF
+    vmLift $ f x
 
 
 runInVM :: PrimMonad m => Tape m -> Input m -> Output m -> VM m () -> m (VMData m)
@@ -289,21 +271,16 @@ newtype ConcurrentVM m a =
            )
 
 
-programAfterCurrent :: PrimMonad m => ConcurrentVM m Int
-programAfterCurrent = do
-  p <- use currentProgram
-  n <- uses vms BV.length
-  return $ mod (p+1) n
-
 goToNextProgram :: PrimMonad m => ConcurrentVM m ()
 goToNextProgram = do
-  p <- programAfterCurrent
-  currentProgram .= p
+  p <- use currentProgram
+  n <- uses vms BV.length
+  currentProgram .= mod (p+1) n
 
 setInstructionPointer :: PrimMonad m => Maybe Int -> ConcurrentVM m ()
 setInstructionPointer x = do
   p <- use currentProgram
-  instPointers %= (BV.// [(p, x)])
+  instPointers . ix p .= x
 
 getCurrentVM :: Monad m => ConcurrentVM m (VMData m)
 getCurrentVM = do
