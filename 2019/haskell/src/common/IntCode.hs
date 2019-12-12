@@ -190,7 +190,10 @@ vmLift = VM . lift . lift
 instance PrimMonad m => MonadIntCode (VM m) where
   readTape index = do
     vm <- get
-    vmLift $ vmReadTape vm index
+    let v = vm ^. programTape
+    if index < V.length v
+    then vmLift $ vmReadTape vm index
+    else return 0
   writeTape index value = do
     vm <- get
     newTape <- vmLift $ vmWriteTape vm index value
