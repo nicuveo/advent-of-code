@@ -3,8 +3,14 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ParallelListComp           #-}
 {-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeFamilies               #-}
 
-module IntCode (run, debug, runConcurrently) where
+module IntCode ( run
+               , runM
+               , runConcurrently
+               , runConcurrentlyM
+               , debug
+               ) where
 
 
 
@@ -13,6 +19,7 @@ module IntCode (run, debug, runConcurrently) where
 import           Control.Lens                hiding (index, ( # ), (...))
 import           Control.Monad.Extra
 import           Control.Monad.Primitive
+import           Control.Monad.Reader
 import           Control.Monad.ST
 import           Control.Monad.State
 import           Data.List                   (intercalate, transpose)
@@ -28,6 +35,11 @@ import           Text.Printf
 import           AOC.Debug.Color
 import           AOC.Misc
 
+
+
+
+-- ##########################################
+-- Part 1: abstract instructions
 
 
 -- capabilities
@@ -148,19 +160,30 @@ step index = do
 
 
 
--- vm
 
-type Tape m = V.MVector (PrimState m) Int
+-- ##########################################
+-- Part 2: single program vm
 
+type Tape   m = V.MVector (PrimState m) Int
+type Input  m = m (Maybe Int)
+type Output m = Int -> m ()
+
+data IOFuns m = IOFuns { inF  :: Input  m
+                       , outF :: Output m
+                       }
 data VMData m = VMData { _programTape  :: Tape m
-                       , _inputBuffer  :: [Int]
-                       , _outputBuffer :: [Int]
                        , _relativeBase :: Int
                        }
 makeLenses ''VMData
 
-newtype VM m a = VM { runVM :: StateT (VMData m) m a }
-  deriving (Functor, Applicative, Monad, MonadState (VMData m), MonadIO)
+newtype VM m a = VM { runVM :: ReaderT (IOFuns m) (StateT (VMData m) m) a }
+  deriving ( Functor
+           , Applicative
+           , Monad
+           , MonadReader (IOFuns m)
+           , MonadState  (VMData m)
+           , MonadIO
+           )
 
 
 vmReadTape :: PrimMonad m => VMData m -> Int -> m Int
@@ -178,31 +201,49 @@ vmWriteTape d index value = do
     V.write newTape index value
     return newTape
 
-vmInput :: VMData m -> (Maybe Int, VMData m)
-vmInput d = case d ^. inputBuffer of
-  []     -> (Nothing, d)
-  (x:xs) -> (Just x, d & inputBuffer .~ xs)
+vmLift :: Monad m => m a -> VM m a
+vmLift = VM . lift . lift
 
 
 instance PrimMonad m => MonadIntCode (VM m) where
   readTape index = do
-    tape <- get
-    VM $ lift $ vmReadTape tape index
+    vm <- get
+    vmLift $ vmReadTape vm index
   writeTape index value = do
-    tape <- get
-    newTape <- VM $ lift $ vmWriteTape tape index value
+    vm <- get
+    newTape <- vmLift $ vmWriteTape vm index value
     modify $ set programTape newTape
 
   getBase = use relativeBase
   addToBase delta = relativeBase += delta
 
-  input = state vmInput
-  output x = outputBuffer %= (x:)
+  input = vmLift =<< asks inF
+  output x = vmLift . ($ x) =<< asks outF
 
 
-runInVM :: PrimMonad m => Tape m -> [Int] -> VM m () -> m (VMData m)
-runInVM tape iBuffer = runS (VMData tape iBuffer [] 0) . runVM
-  where runS = flip execStateT
+runInVM :: PrimMonad m => Tape m -> Input m -> Output m -> VM m () -> m (VMData m)
+runInVM tape iF oF = runS . runR . runVM
+  where runS = flip execStateT $ VMData tape 0
+        runR = flip runReaderT $ IOFuns iF oF
+
+
+
+-- io 1: State with mutable input buffer
+
+inS1 :: MonadState ([Int], [Int]) m => m (Maybe Int)
+inS1 = do
+  ib <- use _1
+  case ib of
+    []     -> return Nothing
+    (x:xs) -> do
+      _1 .= xs
+      return $ Just x
+
+outS1 :: MonadState ([Int], [Int]) m => Int -> m ()
+outS1 x = _2 %= (x:)
+
+runS1 :: Monad m => [Int] -> StateT ([Int], [Int]) m a -> m (a, [Int])
+runS1 ib e = fmap snd <$> runStateT e (ib, [])
 
 
 
@@ -212,55 +253,38 @@ exec :: Monad m => (Int -> m (Maybe Int)) ->  m ()
 exec f = fix (\e i -> whenJustM (f i) e) 0
 
 run :: V.Vector Int -> [Int] -> (V.Vector Int, [Int])
-run tape iBuffer = runST $ do
+run t ib = runST $ runS1 ib $ runM t inS1 outS1
+
+runM :: PrimMonad m => V.Vector Int -> Input m -> Output m -> m (V.Vector Int)
+runM tape iF oF = do
   mv <- V.thaw tape
-  d  <- runInVM mv iBuffer $ exec step
-  pt <- V.freeze $ d ^. programTape
-  return (pt, reverse $ d ^. outputBuffer)
+  d  <- runInVM mv iF oF $ exec step
+  V.freeze $ d ^. programTape
 
 
 
--- debug
 
-debug :: V.Vector Int -> [Int] -> IO ()
-debug tape iBuffer = do
-  mv <- V.thaw tape
-  void $ runInVM mv iBuffer $ exec $ \i -> do
-    liftIO . putStrLn =<< showVM i
-    step i
+-- ##########################################
+-- Part 3: concurrent vm
 
-showVM :: Int -> VM IO String
-showVM index = VM $ do
-  VMData mv i o _ <- get
-  v <- lift $ V.toList <$> V.freeze mv
-  let chunks  = chunksOf 8 v
-      widths    = map (maximum . map (length . show)) $ transpose chunks
-      display r c x
-        | r*8 + c /= index =                make c x
-        | otherwise        = bgColor blue $ make c x
-      make c = printf $ "%" ++ show (widths !! c) ++ "d"
-  return $ unlines $ [ "input  buffer: " ++ show i
-                     , "output buffer: " ++ show (reverse o)
-                     ] ++ [ printf "[%s]" $ intercalate ", " [ display r c x
-                                                             | c <- [0..]
-                                                             | x <- line
-                                                             ]
-                          | r    <- [0..]
-                          | line <- chunks
-                          ]
-
-
-
--- concurrent vm
-
+data ConcurrentIOFuns m = CIOFuns { inCF  :: Int -> Input  m
+                                  , outCF :: Int -> Output m
+                                  }
 data ConcurrentVMData m = CVMData { _vms            :: BV.Vector (VMData m)
                                   , _instPointers   :: BV.Vector (Maybe Int)
                                   , _currentProgram :: Int
                                   }
 makeLenses ''ConcurrentVMData
 
-newtype ConcurrentVM m a = CVM { runCVM :: StateT (ConcurrentVMData m) m a }
-  deriving (Functor, Applicative, Monad, MonadState (ConcurrentVMData m), MonadIO)
+newtype ConcurrentVM m a =
+  CVM { runCVM :: ReaderT (ConcurrentIOFuns m) (StateT (ConcurrentVMData m) m) a }
+  deriving ( Functor
+           , Applicative
+           , Monad
+           , MonadReader (ConcurrentIOFuns m)
+           , MonadState  (ConcurrentVMData m)
+           , MonadIO
+           )
 
 
 programAfterCurrent :: PrimMonad m => ConcurrentVM m Int
@@ -284,15 +308,18 @@ getCurrentVM = do
   p <- use currentProgram
   gets (^?! vms . ix p)
 
+liftCVM :: Monad m => m a -> ConcurrentVM m a
+liftCVM = CVM . lift . lift
+
 
 instance PrimMonad m => MonadIntCode (ConcurrentVM m) where
   readTape index = do
     vm <- getCurrentVM
-    CVM $ lift $ vmReadTape vm index
+    liftCVM $ vmReadTape vm index
   writeTape index value = do
     tape <- getCurrentVM
     p    <- use currentProgram
-    newTape <- CVM $ lift $ vmWriteTape tape index value
+    newTape <- liftCVM $ vmWriteTape tape index value
     vms . ix p . programTape .= newTape
 
   getBase = view relativeBase <$> getCurrentVM
@@ -301,21 +328,42 @@ instance PrimMonad m => MonadIntCode (ConcurrentVM m) where
     modify $ over (vms . ix p . relativeBase) (+delta)
 
   input = do
-    p            <- use currentProgram
-    (res, newVM) <- vmInput <$> gets (^?! vms . ix p)
-    vms . ix p .= newVM
-    return res
+    p <- use currentProgram
+    f <- asks inCF
+    liftCVM $ f p
   output x = do
     p <- use currentProgram
-    vms . ix p . outputBuffer %= (x:)
+    f <- asks outCF
+    liftCVM $ f p x
 
 
-runInConcurrentVM :: PrimMonad m => [(Tape m, [Int])] -> ConcurrentVM m () -> m [VMData m]
-runInConcurrentVM v = fmap (BV.toList . (^.  vms)) . runS baseState . runCVM
-  where runS = flip execStateT
-        baseState = CVMData vmsData basePointers 0
-        basePointers = BV.fromList $ Just 0 <$ v
-        vmsData = BV.fromList [VMData tape iBuffer [] 0 | (tape, iBuffer) <- v]
+runInConcurrentVM :: PrimMonad m       =>
+                     [Tape m]          ->
+                     (Int -> Input  m) ->
+                     (Int -> Output m) ->
+                     ConcurrentVM m () -> m [VMData m]
+runInConcurrentVM tapes iF oF = fmap (BV.toList . (^.  vms)) . runS . runR . runCVM
+  where runS = flip execStateT $ CVMData vmsData basePointers 0
+        runR = flip runReaderT $ CIOFuns iF oF
+        basePointers = BV.fromList $ Just 0 <$ tapes
+        vmsData = BV.fromList [VMData tape 0 | tape <- tapes]
+
+
+
+-- io 2: State with indexed input buffer
+
+inS2 :: MonadState [([Int], [Int], Int)] m => Int -> m (Maybe Int)
+inS2 p = Just <$> liftM2 (!!) (gets (^?! ix p . _1)) (gets (^?! ix p . _3))
+
+outS2 :: MonadState [([Int], [Int], Int)] m => Int -> Int -> m ()
+outS2 p x = ix p . _2 %= (x:)
+
+runS2 :: Monad m => [[Int]] -> StateT [([Int], [Int], Int)] m a -> m [[Int]]
+runS2 ibs e = map (^. _2) <$> execStateT e [(ib, [], 0) | ib <- ibs]
+
+
+
+-- execution
 
 execConcurrently :: PrimMonad m => ConcurrentVM m ()
 execConcurrently = do
@@ -336,12 +384,46 @@ execConcurrently = do
           when (x /= ip) goToNextProgram
           execConcurrently
 
-runConcurrently :: [([Int], [Int])] -> [(V.Vector Int, [Int])]
-runConcurrently vmsData = runST $ do
-  d <- for vmsData $ \(prog, ibuf) -> do
-    tape <- V.thaw $ V.fromList prog
-    return (tape, ibuf)
-  res <- runInConcurrentVM d execConcurrently
-  for res $ \vmData -> do
-    v <- V.freeze $ vmData ^. programTape
-    return (v, vmData ^. outputBuffer)
+runConcurrentlyM :: PrimMonad m       =>
+                    [V.Vector Int]    ->
+                    (Int -> Input  m) ->
+                    (Int -> Output m) -> m [V.Vector Int]
+runConcurrentlyM vmsData iF oF = do
+  tapes <- traverse V.thaw vmsData
+  res   <- runInConcurrentVM tapes iF oF execConcurrently
+  for res $ \vmData -> V.freeze $ vmData ^. programTape
+
+runConcurrently :: [(V.Vector Int, [Int])] -> [[Int]]
+runConcurrently i = runST $ runS2 ibs $ runConcurrentlyM tapes inS2 outS2
+  where (tapes, ibs) = unzip i
+
+
+
+
+-- ##########################################
+-- Part 4: debug
+
+debug :: V.Vector Int -> [Int] -> IO ()
+debug tape iBuffer = do
+  mv <- V.thaw tape
+  void $ runS1 iBuffer $ runInVM mv inS1 outS1 $ exec $ \i -> do
+    liftIO . putStrLn =<< showVM i
+    step i
+
+showVM :: PrimMonad m => Int -> VM m String
+showVM index = VM $ do
+  VMData mv _ <- get
+  v <- lift $ V.toList <$> V.freeze mv
+  let chunks  = chunksOf 8 v
+      widths    = map (maximum . map (length . show)) $ transpose chunks
+      display r c x
+        | r*8 + c /= index =                make c x
+        | otherwise        = bgColor blue $ make c x
+      make c = printf $ "%" ++ show (widths !! c) ++ "d"
+  return $ unlines [ printf "[%s]" $ intercalate ", " [ display r c x
+                                                      | c <- [0..]
+                                                      | x <- line
+                                                      ]
+                   | r    <- [0..]
+                   | line <- chunks
+                   ]
