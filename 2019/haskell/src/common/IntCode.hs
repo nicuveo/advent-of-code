@@ -9,6 +9,8 @@ module IntCode ( run
                , runM
                , runConcurrently
                , runConcurrentlyM
+               , inS1, outS1, runS1
+               , inSC, outSC, runSC
                , debug
                ) where
 
@@ -243,7 +245,7 @@ outS1 :: MonadState ([Int], [Int]) m => Int -> m ()
 outS1 x = _2 %= (x:)
 
 runS1 :: Monad m => [Int] -> StateT ([Int], [Int]) m a -> m (a, [Int])
-runS1 ib e = fmap snd <$> runStateT e (ib, [])
+runS1 ib e = fmap (reverse . snd) <$> runStateT e (ib, [])
 
 
 
@@ -350,16 +352,22 @@ runInConcurrentVM tapes iF oF = fmap (BV.toList . (^.  vms)) . runS . runR . run
 
 
 
--- io 2: State with indexed input buffer
+-- concurrent io: State with indexed input buffer
 
-inS2 :: MonadState [([Int], [Int], Int)] m => Int -> m (Maybe Int)
-inS2 p = Just <$> liftM2 (!!) (gets (^?! ix p . _1)) (gets (^?! ix p . _3))
+inSC :: MonadState [([Int], [Int])] m => Int -> m (Maybe Int)
+inSC p = do
+  ib <- gets (^?! ix p . _1)
+  case ib of
+    [] -> return Nothing
+    (x:xs) -> do
+     ix p . _2 .= xs
+     return $ Just x
 
-outS2 :: MonadState [([Int], [Int], Int)] m => Int -> Int -> m ()
-outS2 p x = ix p . _2 %= (x:)
+outSC :: MonadState [([Int], [Int])] m => Int -> Int -> m ()
+outSC p x = ix p . _2 %= (++[x])
 
-runS2 :: Monad m => [[Int]] -> StateT [([Int], [Int], Int)] m a -> m [[Int]]
-runS2 ibs e = map (^. _2) <$> execStateT e [(ib, [], 0) | ib <- ibs]
+runSC :: Monad m => [[Int]] -> StateT [([Int], [Int])] m a -> m [[Int]]
+runSC ibs e = map snd <$> execStateT e [(ib, []) | ib <- ibs]
 
 
 
@@ -381,7 +389,7 @@ execConcurrently = do
           goToNextProgram
           execConcurrently
         Just x  -> do
-          when (x /= ip) goToNextProgram
+          when (x == ip) goToNextProgram
           execConcurrently
 
 runConcurrentlyM :: PrimMonad m       =>
@@ -394,7 +402,7 @@ runConcurrentlyM vmsData iF oF = do
   for res $ \vmData -> V.freeze $ vmData ^. programTape
 
 runConcurrently :: [(V.Vector Int, [Int])] -> [[Int]]
-runConcurrently i = runST $ runS2 ibs $ runConcurrentlyM tapes inS2 outS2
+runConcurrently i = runST $ runSC ibs $ runConcurrentlyM tapes inSC outSC
   where (tapes, ibs) = unzip i
 
 
