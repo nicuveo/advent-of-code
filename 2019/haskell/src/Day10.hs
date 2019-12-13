@@ -32,27 +32,25 @@ reduce (Point y x) = Point (div y d) (div x d)
 
 part1 :: Asteroids -> (Int, Point)
 part1 asteroids = maximum $ zip (map canView asteroids) asteroids
-  where canView a = length $ nub [ getVector a b
-                                 | b <- asteroids
-                                 , b /= a
-                                 ]
+  where canView a = length $ nub [getVector a b | b <- asteroids, b /= a]
         getVector p q = reduce $ q - p
 
 
-part2 :: Asteroids -> Point -> (Double, Int, Point)
-part2 asteroids station = (!! 199)      $
+part2 :: Asteroids -> Point -> Int
+part2 asteroids station = getRes        $
+                          (!! 199)      $
                           concat        $
                           transpose     $
                           groupOn angle $
                           sort          $
                           map addInfo   $
                           filter (/= station) asteroids
-  where addInfo :: Point -> (Double, Int, Point)
-        addInfo p =
+  where addInfo p =
           let r = p - station
               Point y x = reduce r
           in (-(atan2 `on` fromIntegral) x y, sqNorm r, p)
         angle (a, _, _) = a
+        getRes (_, _, Point y x) = x * 100 + y
 
 
 

@@ -69,7 +69,7 @@ inF = do
 
 outF :: Int -> RobotMonad s ()
 outF x = do
-  cs   <- fetchState
+  cs <- fetchState
   when (cs == SendingColor) $
     error "IO in wrong state: got SendingColor in output"
   if cs == ExpectingColor
