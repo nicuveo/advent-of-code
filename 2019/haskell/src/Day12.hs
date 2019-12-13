@@ -45,64 +45,53 @@ parseInput = map parseLine . lines
 
 
 
--- solution
+-- simulation step
 
 applyAll :: a -> [a -> a] -> a
 applyAll = foldl' (&)
 
 applyGravity :: [Moon] -> [Moon]
-applyGravity moons = [ applyAll m $ concat [ computeChange m o
-                                           | o <- moons
-                                           , m /= o
-                                           ]
-                     | m <- moons
-                     ]
-  where computeChange m1 m2 = [ velocityChange xPosition xVelocity m1 m2
-                              , velocityChange yPosition yVelocity m1 m2
-                              , velocityChange zPosition zVelocity m1 m2
-                              ]
-        velocityChange pos vel m1 m2 m =
-          let pos1 = m1 ^. pos
-              pos2 = m2 ^. pos
-          in if | pos1  < pos2 -> m & vel +~ 1
-                | pos1  > pos2 -> m & vel -~ 1
-                | otherwise    -> m
+applyGravity moons = map (\m -> applyAll m $ concatMap (computeChange m) moons) moons
+  where computeChange m1 m2 =
+          [ velocityChange (m1 ^. xPosition) (m2 ^. xPosition) xVelocity
+          , velocityChange (m1 ^. yPosition) (m2 ^. yPosition) yVelocity
+          , velocityChange (m1 ^. zPosition) (m2 ^. zPosition) zVelocity
+          ]
+        velocityChange pos1 pos2 vel m
+           | pos1 < pos2 = m & vel +~ 1
+           | pos1 > pos2 = m & vel -~ 1
+           | otherwise   = m
 
 applyVelocity :: [Moon] -> [Moon]
-applyVelocity = map apply
-  where apply moon = applyAll moon [ \m -> m & xPosition +~ m ^. xVelocity
-                                   , \m -> m & yPosition +~ m ^. yVelocity
-                                   , \m -> m & zPosition +~ m ^. zVelocity
-                                   ]
+applyVelocity = map $ flip applyAll [ \m -> m & xPosition +~ m ^. xVelocity
+                                    , \m -> m & yPosition +~ m ^. yVelocity
+                                    , \m -> m & zPosition +~ m ^. zVelocity
+                                    ]
 
 timeStep :: [Moon] -> [Moon]
 timeStep = applyVelocity . applyGravity
 
 
-potentialEnergy :: Moon -> Int
-potentialEnergy m = sum $ abs <$> [ m ^. xPosition
-                                  , m ^. yPosition
-                                  , m ^. zPosition
-                                  ]
 
-kineticEnergy :: Moon -> Int
-kineticEnergy m = sum $ abs <$> [ m ^. xVelocity
-                                , m ^. yVelocity
-                                , m ^. zVelocity
-                                ]
+-- extracting data
+
+extractX, extractY, extractZ :: [Moon] -> [Int]
+extractX = concatMap $ \(Moon px _  _  vx _  _ ) -> [px, vx]
+extractY = concatMap $ \(Moon _  py _  _  vy _ ) -> [py, vy]
+extractZ = concatMap $ \(Moon _  _  pz _  _  vz) -> [pz, vz]
+
+extractP, extractV :: [Moon] -> [[Int]]
+extractP = map $ \(Moon px py pz _  _  _ ) -> [px, py, pz]
+extractV = map $ \(Moon _  _  _  vx vy vz) -> [vx, vy, vz]
+
+
+
+-- energy
 
 systemEnergy :: [Moon] -> Int
-systemEnergy moons = sum [potentialEnergy m * kineticEnergy m | m <- moons]
-
-
-extractX :: [Moon] -> [Int]
-extractX = concatMap $ \(Moon px _ _ vx _ _) -> [px, vx]
-
-extractY :: [Moon] -> [Int]
-extractY = concatMap $ \(Moon _ py _ _ vy _) -> [py, vy]
-
-extractZ :: [Moon] -> [Int]
-extractZ = concatMap $ \(Moon _ _ pz _ _ vz) -> [pz, vz]
+systemEnergy moons = sum $ zipWith (*) potentialEnergy kineticEnergy
+  where potentialEnergy = sum . map abs <$> extractP moons
+        kineticEnergy   = sum . map abs <$> extractV moons
 
 
 
