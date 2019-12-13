@@ -1,6 +1,4 @@
-{-# LANGUAGE MultiWayIf       #-}
-{-# LANGUAGE ParallelListComp #-}
-{-# LANGUAGE TemplateHaskell  #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 
 -- import
