@@ -76,7 +76,7 @@ outF v = do
   whenM (uses buffer $ (== 3) . length) $ do
     [t,y,x] <- use buffer
     buffer .= []
-    if (x == (-1) && y == 0)
+    if x == (-1) && y == 0
     then score .= t
     else do
       let tile = toEnum t
