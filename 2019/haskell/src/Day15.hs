@@ -16,7 +16,6 @@ import           Data.Ratio
 import qualified Data.Set            as S
 import qualified Data.Vector.Unboxed as V
 import           System.IO
-import           Text.Printf
 
 import           AOC
 import           AOC.Debug.Animate
@@ -136,10 +135,11 @@ step s
 
 render :: SparseMap Tile -> PFState Point -> String
 render m s = displayWith r m
-  where r _ (Just False) = fgColor white $ bgColor gray  "▇▇"
-        r _ Nothing      = fgColor white $ bgColor black "??"
+  where r _ (Just False) = fgColor white $ bgColor gray "▇▇"
+        r _ Nothing      = fgColor white $ bgColor gray "▇▇"
         r p _
           | Just c <- pfCost s p = b p $ fgColor (f c) "▒▒"
+          | p == pfEnd s         = b p $ fgColor (f maxCost) "▒▒"
           | otherwise            = "  "
         f c = interpolateN distanceMap $ c % maxCost
         b p
@@ -148,7 +148,7 @@ render m s = displayWith r m
                                         , pfEnd     s
                                         , pfCurrent s
                                         ]
-        q = bool id $ bgColor white
+        q = bgColor . bool (interpolate (5%6) white black) white
         maxCost = max 1 $ maximum $ map snd $ M.elems $ pfMap s
         gray = interpolate (1%3) white black
         distanceMap = [ interpolate (3%4) black red
@@ -182,19 +182,12 @@ runPFAnimation t s g = do
 animFillStep :: SparseMap Tile -> FillState -> Maybe (Logs, FillState)
 animFillStep t s@(_, _, ps)
   | null ps   = Nothing
-  | otherwise =
-      let ns@(z, i, nps) = fillStep t s
-      in  Just ( [ printf "At distance: %d " i
-                 , printf "Points: %s" $ show nps
-                 , printf "Places seen: %d" $ S.size z
-                 ]
-               , ns
-               )
+  | otherwise = Just ([], fillStep t s)
 
 renderFill :: SparseMap Tile -> FillState -> String
 renderFill m (s, _, ps) = displayWith r m
-  where r _ (Just False) = fgColor white $ bgColor gray  "▇▇"
-        r _ Nothing      = fgColor white $ bgColor black "??"
+  where r _ (Just False) = fgColor white $ bgColor gray "▇▇"
+        r _ Nothing      = fgColor white $ bgColor gray "▇▇"
         r p _
           | p `elem`     ps = bgColor currentPointsColor "  "
           | p `S.member`  s = bgColor oldPointsColor     "  "
