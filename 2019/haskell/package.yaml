@@ -19,6 +19,7 @@ dependencies:
   - lens
   - monad-loops
   - mtl
+  - parallel
   - parsec
   - pqueue
   - primitive
