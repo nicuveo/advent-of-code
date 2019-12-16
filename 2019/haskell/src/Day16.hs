@@ -1,9 +1,9 @@
+{-# LANGUAGE ParallelListComp #-}
+
+
 -- import
 
-import           Data.Function (on)
-import           Data.List
-import           Data.Maybe
-import           Text.Parsec
+import           Data.Char (digitToInt)
 
 import           AOC
 
@@ -11,24 +11,23 @@ import           AOC
 
 -- input
 
-type Input = String
+type Signal = [Int]
 
-parseInput :: String -> Input
-parseInput = map parseLine . lines
-  where parseLine = parseWith line
-        line = undefined
+parseInput :: String -> Signal
+parseInput = map digitToInt
 
 
 
 -- solution
 
-part1 :: Input -> String
-part1 = undefined
-  where f = undefined
+digitPattern :: Int -> [Int]
+digitPattern = (patterns !!)
+  where patterns    = map mkPattern [1..]
+        mkPattern n = tail $ cycle $ [0,1,0,-1] >>= replicate n
 
-part2 :: Input -> String
-part2 = undefined
-  where f = undefined
+step :: Signal -> Signal
+step s = [f i | i <- [0..] | _ <- s]
+  where f i = flip mod 10 $ abs $ sum $ zipWith (*) s $ digitPattern i
 
 
 
@@ -37,5 +36,5 @@ part2 = undefined
 main :: IO ()
 main = aocMain 16 $ \rawInput -> do
   let input = parseInput rawInput
-  print $ part1 input
-  print $ part2 input
+      z = iterate step input
+  putStrLn $ take 8 $ concatMap show $ z !! 100
