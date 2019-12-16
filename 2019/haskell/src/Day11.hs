@@ -58,14 +58,14 @@ fetchState = do
         nextState ExpectingMovement = SendingColor
 
 
-inF :: RobotMonad s (Maybe Int)
+inF :: RobotMonad s (Either ErrorCode Int)
 inF = do
   cs   <- fetchState
   pos  <- use position
   cmap <- use colorMap
   when (cs /= SendingColor) $ error $
     printf "IO in wrong state: want SendingColor got %s" $ show cs
-  return $ Just $ fromEnum $ fromMaybe Black $ cmap !? pos
+  return $ Right $ fromEnum $ fromMaybe Black $ cmap !? pos
 
 outF :: Int -> RobotMonad s ()
 outF x = do

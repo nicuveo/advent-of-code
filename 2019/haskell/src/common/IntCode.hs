@@ -5,7 +5,8 @@
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
 
-module IntCode ( run
+module IntCode ( ErrorCode(..)
+               , run
                , runM
                , runConcurrently
                , runConcurrentlyM
@@ -42,10 +43,14 @@ import           AOC.Misc
 
 -- capabilities
 
+data ErrorCode = WaitForInput
+               | EndOfProgram
+               deriving (Show, Eq)
+
 class Monad m => MonadIntCode m where
   readTape  :: Int -> m Int
   writeTape :: Int -> Int -> m ()
-  input     :: m (Maybe Int)
+  input     :: m (Either ErrorCode Int)
   output    :: Int -> m ()
   getBase   :: m Int
   addToBase :: Int -> m ()
@@ -96,7 +101,7 @@ jumpI shouldJump index (m1,m2,_) = do
     then readAs m2 $ index + 2
     else return $ index + 3
 
-addI, mulI, ltI, eqI, jmpTI, jmpFI, inI, outI, rbI :: MonadIntCode m => Instruction m
+addI, mulI, ltI, eqI, jmpTI, jmpFI, outI, rbI :: MonadIntCode m => Instruction m
 
 addI  = binaryI (+)
 mulI  = binaryI (*)
@@ -105,15 +110,18 @@ eqI   = binaryI $ fromEnum ... (==)
 jmpTI = jumpI (/= 0)
 jmpFI = jumpI (== 0)
 
+outI index (m,_,_) = unary index m output
+rbI  index (m,_,_) = unary index m addToBase
+
+inI :: MonadIntCode m => Int -> (Mode,Mode,Mode) -> m (Maybe Int)
 inI index (m,_,_) = do
   value <- input
   case value of
-    Nothing -> return index
-    Just x  -> do
+    Left EndOfProgram -> return Nothing
+    Left WaitForInput -> return $ Just index
+    Right x           -> do
       writeAs m (index + 1) x
-      return $ index + 2
-outI index (m,_,_) = unary index m output
-rbI  index (m,_,_) = unary index m addToBase
+      return $ Just $ index + 2
 
 
 
@@ -126,13 +134,13 @@ step index = do
   case take 2 $ opCode ++ "0" of
     "10" -> Just <$> addI  index (m1,m2,m3)
     "20" -> Just <$> mulI  index (m1,m2,m3)
-    "30" -> Just <$> inI   index (m1,m2,m3)
     "40" -> Just <$> outI  index (m1,m2,m3)
     "50" -> Just <$> jmpTI index (m1,m2,m3)
     "60" -> Just <$> jmpFI index (m1,m2,m3)
     "70" -> Just <$> ltI   index (m1,m2,m3)
     "80" -> Just <$> eqI   index (m1,m2,m3)
     "90" -> Just <$> rbI   index (m1,m2,m3)
+    "30" -> inI index (m1,m2,m3)
     "99" -> return Nothing
     _    -> error $ "unexpected opCode: " ++ opCode
   where toMode '0' = Position
@@ -147,7 +155,7 @@ step index = do
 -- Part 2: single program vm
 
 type Tape   m = V.MVector (PrimState m) Int
-type Input  m = m (Maybe Int)
+type Input  m = m (Either ErrorCode Int)
 type Output m = Int -> m ()
 
 data IOFuns m = IOFuns { inF  :: Input  m
@@ -217,14 +225,14 @@ runInVM tape iF oF = runS . runR . runVM
 
 -- io 1: State with mutable input buffer
 
-inS1 :: MonadState ([Int], [Int]) m => m (Maybe Int)
+inS1 :: MonadState ([Int], [Int]) m => m (Either ErrorCode Int)
 inS1 = do
   ib <- use _1
   case ib of
-    []     -> return Nothing
+    []     -> error "end of input"
     (x:xs) -> do
       _1 .= xs
-      return $ Just x
+      return $ Right x
 
 outS1 :: MonadState ([Int], [Int]) m => Int -> m ()
 outS1 x = _2 %= (x:)
@@ -334,14 +342,14 @@ runInConcurrentVM tapes iF oF = fmap (BV.toList . (^.  vms)) . runS . runR . run
 
 -- concurrent io: State with indexed input buffer
 
-inSC :: MonadState [([Int], [Int])] m => Int -> m (Maybe Int)
+inSC :: MonadState [([Int], [Int])] m => Int -> m (Either ErrorCode Int)
 inSC p = do
   ib <- gets (^?! ix p . _1)
   case ib of
-    [] -> return Nothing
+    [] -> error "end of input"
     (x:xs) -> do
      ix p . _2 .= xs
-     return $ Just x
+     return $ Right x
 
 outSC :: MonadState [([Int], [Int])] m => Int -> Int -> m ()
 outSC p x = ix p . _2 %= (++[x])

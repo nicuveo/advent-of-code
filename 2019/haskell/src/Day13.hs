@@ -62,13 +62,13 @@ displayGame = do
 
 
 
-inF :: GameMonad (Maybe Int)
+inF :: GameMonad (Either ErrorCode Int)
 inF = do
   b <- use ball
   p <- use paddle
-  return $ Just $ if | b < p     -> (-1)
-                     | b > p     -> 1
-                     | otherwise -> 0
+  return $ Right $ if | b < p     -> (-1)
+                      | b > p     -> 1
+                      | otherwise -> 0
 
 outF :: Int -> GameMonad ()
 outF v = do

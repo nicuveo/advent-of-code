@@ -27,14 +27,14 @@ parseInput = V.fromList . map read . splitOn ","
 
 -- concurrent vm io: chaining
 
-inF :: MonadState (BV.Vector [Int]) m => Int -> m (Maybe Int)
+inF :: MonadState (BV.Vector [Int]) m => Int -> m (Either ErrorCode Int)
 inF p = do
   ib <- gets (^?! ix p)
   case ib of
-    [] -> return Nothing
+    [] -> return $ Left WaitForInput
     (x:xs) -> do
      ix p .= xs
-     return $ Just x
+     return $ Right x
 
 outF :: MonadState (BV.Vector [Int]) m => Int -> Int -> m ()
 outF p x = do
