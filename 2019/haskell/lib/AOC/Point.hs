@@ -59,6 +59,26 @@ directionVector cd = case cd of
 
 -- rotation
 
+rotateR :: Direction -> Direction
+rotateR N  = E
+rotateR NE = SE
+rotateR E  = S
+rotateR SE = SW
+rotateR S  = W
+rotateR SW = NW
+rotateR W  = N
+rotateR NW = NE
+
+rotateL :: Direction -> Direction
+rotateL N  = W
+rotateL NE = NW
+rotateL E  = N
+rotateL SE = NE
+rotateL S  = E
+rotateL SW = SE
+rotateL W  = S
+rotateL NW = SW
+
 rotate90R :: Vector -> Vector
 rotate90R (Point y x) = Point x (-y)
 
