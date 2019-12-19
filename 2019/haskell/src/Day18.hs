@@ -5,10 +5,9 @@
 
 -- import
 
-import           Control.Monad
+import           Control.Monad.State.Strict
 import           Control.Parallel.Strategies
 import           Data.Char
-import           Data.Function.Memoize
 import qualified Data.HashMap.Strict         as M
 import           Data.List
 import           Data.Maybe
@@ -57,10 +56,11 @@ findPrerequisites :: Maze -> Prerequisites
 findPrerequisites m = flood ([], S.empty, [], []) [pos m M.! '@']
   where flood (od,sp,ks,ds) [] =
           M.unions $ M.fromList ((,sort od) <$> ks) :
-              [ flood (toLower d:od,sp,[],[]) nbs
-              | d <- ds
-              , let nbs = getNeighbours m $ pos m M.! d
-              ]
+          withStrategy (parList rseq)
+          [ flood (toLower d:od,sp,[],[]) nbs
+          | d <- ds
+          , let nbs = getNeighbours m $ pos m M.! d
+          ]
         flood (od,sp,ks,ds) (p:ps) =
           let x   = grid m ! p
               nps = ps ++ getNeighbours m p
@@ -71,7 +71,7 @@ findPrerequisites m = flood ([], S.empty, [], []) [pos m M.! '@']
                 | otherwise     -> flood (od,nsp,  ks,  ds) nps
 
 makeCache :: Maze -> DistanceCache
-makeCache m = M.fromList $ do
+makeCache m = M.fromList $ withStrategy (parList rseq) $ do
   let keys = getKeys m
   ka <- "@1234" ++ keys
   kb <- "@1234" ++ keys
@@ -86,18 +86,27 @@ makeCache m = M.fromList $ do
 -- solution
 
 findShortestPath :: Maze -> Prerequisites -> DistanceCache -> [Key] -> Int
-findShortestPath m reqs cache = fsp []
-  where keys = getKeys m
-        wfsp = memoize2 fsp
-        fsp ks rs
-          | sort ks == keys = 0
-          | otherwise = minimum $ withStrategy (parList rseq) $ do
-              nk <- keys \\ ks
-              guard $ all (`elem` ks) $ reqs M.! nk
-              ok <- rs
-              let ci = if ok < nk then (ok,nk) else (nk,ok)
-              Just cost <- [M.lookup ci cache]
-              return $ cost + wfsp (sort $ nk : ks) (sort $ nk : (rs \\ [ok]))
+findShortestPath m reqs cache = flip evalState M.empty . fsp []
+   where keys = getKeys m
+         fsp ks rs
+           | sort ks == keys = return 0
+           | otherwise = fmap minimum $ forM nextSteps $ \(ok,nk,cost) -> do
+               let nks = sort $ nk : ks
+                   nrs = sort $ nk : (rs \\ [ok])
+               memo <- get
+               case M.lookup (nks,nrs) memo of
+                 Just res -> return $ res + cost
+                 Nothing  -> do
+                   res <- fsp nks nrs
+                   modify $ M.insert (nks,nrs) res
+                   return $ res + cost
+                 where nextSteps = do
+                         nk <- keys \\ ks
+                         guard $ all (`elem` ks) $ reqs M.! nk
+                         ok <- rs
+                         let ci = if ok < nk then (ok,nk) else (nk,ok)
+                         Just cost <- [M.lookup ci cache]
+                         return (ok,nk,cost)
 
 
 
