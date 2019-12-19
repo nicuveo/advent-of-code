@@ -16,7 +16,9 @@ dependencies:
   - data-has
   - extra
   - filepath
+  - hashable
   - lens
+  - memoize
   - monad-loops
   - mtl
   - parallel
@@ -32,6 +34,7 @@ dependencies:
   - tasty-quickcheck
   - time
   - transformers-base
+  - unordered-containers
   - vector
 
 library:
@@ -75,8 +78,8 @@ executables:
   # day14: {<<: *exe, main: src/Day14.hs}
   # day15: {<<: *exe, main: src/Day15.hs}
   # day16: {<<: *exe, main: src/Day16.hs}
-  day17: {<<: *exe, main: src/Day17.hs}
-  # day18: {<<: *exe, main: src/Day18.hs}
+  # day17: {<<: *exe, main: src/Day17.hs}
+  day18: {<<: *exe, main: src/Day18.hs}
   # day19: {<<: *exe, main: src/Day19.hs}
   # day20: {<<: *exe, main: src/Day20.hs}
   # day21: {<<: *exe, main: src/Day21.hs}
