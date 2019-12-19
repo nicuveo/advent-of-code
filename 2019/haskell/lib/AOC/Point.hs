@@ -15,7 +15,7 @@ data Point = Point { py :: {-# UNPACK #-} !Int
                    } deriving (Eq, Ord)
 
 instance Show Point where
-  show (Point y x) = printf "(y: %d, x: %2d)" y x
+  show (Point y x) = printf "<y:%d,x:%d>" y x
 
 type Vector = Point
 
