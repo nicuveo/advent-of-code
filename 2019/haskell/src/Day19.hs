@@ -68,9 +68,10 @@ guessSquare prob = guess start
              | otherwise   -> p
 
 check :: Prober -> Point -> Bool
-check prob (Point y x) = all prob $ concat [ [Point (y+d) x, Point y (x+d)]
-                                           | d <- [0..99]
-                                           ]
+check prob (Point y x) = all prob [ Point  y     x
+                                  , Point (y+99) x
+                                  , Point  y    (x+99)
+                                  ]
 
 view :: Prober -> (Int, Int, Int, Int) -> Point -> String
 view prob (xmin, xmax, ymin, ymax) p =
