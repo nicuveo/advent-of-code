@@ -1,0 +1,12 @@
+[package]
+name = "aoc"
+version = "0.1.0"
+
+[dependencies]
+
+[lib]
+path = "lib/aoc.rs"
+
+[[bin]]
+name = "day01"
+path = "src/day01.rs"
