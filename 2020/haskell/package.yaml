@@ -1,0 +1,65 @@
+name: aoc
+
+ghc-options:
+  - -Wall
+  - -fwarn-tabs
+  - -fno-warn-type-defaults
+dependencies:
+  - base >= 4.7 && < 5
+  - MissingH
+  - QuickCheck
+  - array
+  - base16-bytestring
+  - bytestring
+  - containers
+  - cryptohash-md5
+  - data-has
+  - extra
+  - filepath
+  - hashable
+  - lens
+  - monad-loops
+  - mtl
+  - parallel
+  - parsec
+  - pqueue
+  - primitive
+  - random
+  - safe
+  - split
+  - string-qq
+  - tasty
+  - tasty-hunit
+  - tasty-quickcheck
+  - time
+  - transformers-base
+  - unordered-containers
+  - vector
+
+library:
+  source-dirs: lib
+
+_exe: &exe
+  ghc-options:
+    - -O2
+    - -threaded -rtsopts -with-rtsopts=-N4
+    - -fno-warn-missing-signatures
+    - -fno-warn-unused-top-binds
+    - -fno-warn-unused-do-bind
+    - -fno-warn-unused-imports
+  source-dirs:
+    - .
+    - src/common
+  dependencies: aoc
+
+executables:
+  animation_test: {
+    <<: *exe,
+    main: src/AnimationTest.hs
+  }
+  pf_test: {
+    <<: *exe,
+    main: src/PathFindingTest.hs
+  }
+
+  day01: {<<: *exe, main: src/Day01.hs}
