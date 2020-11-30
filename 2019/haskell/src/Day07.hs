@@ -59,7 +59,7 @@ part2 program = maximum $ map computeOutput $ permutations [5,6,7,8,9]
   where programs = replicate 5 program
         computeOutput (p:ps) = head $ concat $ runP ([p,0] : map pure ps)
         computeOutput _      = error "wat"
-        runP ibs = runST $ runC ibs $ runConcurrentlyM programs inF outF
+        runP ibs = runST $ runC ibs $ runConcurrentlyM Lazy programs inF outF
 
 
 

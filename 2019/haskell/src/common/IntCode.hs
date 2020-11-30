@@ -8,6 +8,7 @@
 module IntCode ( ErrorCode(..)
                , run
                , runM
+               , ExecutionMode(..)
                , runConcurrently
                , runConcurrentlyM
                , inS1, outS1, runS1
@@ -361,36 +362,39 @@ runSC ibs e = map snd <$> execStateT e [(ib, []) | ib <- ibs]
 
 -- execution
 
-execConcurrently :: PrimMonad m => ConcurrentVM m ()
-execConcurrently = do
+data ExecutionMode = Eager | Lazy deriving (Show, Eq)
+
+execConcurrently :: PrimMonad m => ExecutionMode -> ConcurrentVM m ()
+execConcurrently m = do
   prog         <- use currentProgram
   maybePointer <- gets (^?! instPointers . ix prog)
   case maybePointer of
     Nothing -> do
       goToNextProgram
-      execConcurrently
+      execConcurrently m
     Just ip -> do
       np <- step ip
       setInstructionPointer np
       case np of
         Nothing -> unlessM (uses instPointers $ all isNothing) $ do
           goToNextProgram
-          execConcurrently
+          execConcurrently m
         Just x  -> do
-          when (x == ip) goToNextProgram
-          execConcurrently
+          when (x == ip || m == Eager) goToNextProgram
+          execConcurrently m
 
 runConcurrentlyM :: PrimMonad m       =>
+                    ExecutionMode     ->
                     [V.Vector Int]    ->
                     (Int -> Input  m) ->
                     (Int -> Output m) -> m [V.Vector Int]
-runConcurrentlyM vmsData iF oF = do
+runConcurrentlyM m vmsData iF oF = do
   tapes <- traverse V.thaw vmsData
-  res   <- runInConcurrentVM tapes iF oF execConcurrently
+  res   <- runInConcurrentVM tapes iF oF $ execConcurrently m
   for res $ \vmData -> V.freeze $ vmData ^. programTape
 
-runConcurrently :: [(V.Vector Int, [Int])] -> [[Int]]
-runConcurrently i = runST $ runSC ibs $ runConcurrentlyM tapes inSC outSC
+runConcurrently :: ExecutionMode -> [(V.Vector Int, [Int])] -> [[Int]]
+runConcurrently m i = runST $ runSC ibs $ runConcurrentlyM m tapes inSC outSC
   where (tapes, ibs) = unzip i
 
 

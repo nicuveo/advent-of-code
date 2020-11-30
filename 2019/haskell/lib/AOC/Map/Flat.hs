@@ -17,7 +17,7 @@ import           AOC.Point
 data FlatMap a = FlatMap { fmapData   :: V.Vector a
                          , fmapWidth  :: {-# UNPACK #-} !Int
                          , fmapHeight :: {-# UNPACK #-} !Int
-                         }
+                         } deriving (Eq, Ord)
 
 type Index = Int
 
@@ -36,6 +36,13 @@ from2DList lists
   | otherwise = FlatMap (V.fromList $ concat lists) width height
   where width  = maybe 0 length $ headMay lists
         height = length lists
+
+
+
+-- to list
+
+toList :: V.Unbox a => FlatMap a -> [a]
+toList = V.toList . fmapData
 
 
 
