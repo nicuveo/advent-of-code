@@ -1,9 +1,11 @@
 -- import
 
-import           Data.Function (on)
+import           Control.Monad
+import           Data.Function    (on)
 import           Data.List
 import           Data.Maybe
 import           Text.Parsec
+import           Text.Parsec.Char
 
 import           AOC
 
@@ -35,11 +37,11 @@ main :: IO ()
 main = aocMain 00 $ \rawData -> do
   let testInput = parseInput example
       realInput = parseInput rawData
-  putStrLn "# Given example"
+  putStrLn "# Part 1"
   print $ part1 testInput
-  print $ part2 testInput
-  putStrLn "# Real input"
   print $ part1 realInput
+  putStrLn "# Part 2"
+  print $ part2 testInput
   print $ part2 realInput
 
 example :: String
