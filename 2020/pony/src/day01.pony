@@ -1,25 +1,39 @@
 use "files"
+use "collections"
 
 actor Day01
+  let _env: Env
+
   new create(env: Env val, input': FileLines iso) =>
+    _env = env
     try
       let input: FileLines ref = consume input'
-      var part1: I64 = 0
-      var part2: I64 = 0
+      var values = Set[I64].create()
       for line in input do
         let value = line.i64() ?
-        part1 = part1 + fuel(value)
-        part2 = part2 + total_fuel(value)
+        values.set(value)
       end
-      env.out.print("Part1: " + part1.string())
-      env.out.print("Part2: " + part2.string())
+      part1(values)
+      part2(values)
     else
       env.out.print("Day01: something went wrong")
     end
 
-  fun fuel(mass: I64): I64 =>
-    (mass / 3) - 2
+  fun part1(input: Set[I64] box) =>
+    for value in input.values() do
+      if input.contains(2020-value) then
+        _env.out.print("Day01 part1: " + (value * (2020-value)).string())
+        return
+      end
+    end
 
-  fun total_fuel(mass: I64): I64 =>
-    let f = fuel(mass)
-    if f <= 0 then 0 else f + total_fuel(f) end
+  fun part2(input: Set[I64] box) =>
+    for value1 in input.values() do
+      for value2 in input.values() do
+        let value3 = 2020 - (value1 + value2)
+        if input.contains(value3) then
+          _env.out.print("Day01 part2: " + (value1 * value2 * value3).string())
+          return
+        end
+      end
+    end
