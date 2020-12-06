@@ -1,2 +1,2 @@
 day%:
-	ponyc -o bin -b aoc src && ./bin/aoc $*
+	corral run -- ponyc -o bin -b aoc src && ./bin/aoc $*
