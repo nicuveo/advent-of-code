@@ -32,6 +32,7 @@ actor Main
       match day
       | "01" => Day01(env, consume input)
       | "02" => Day02(env, consume input)
+      | "03" => Day03(env, consume input)
       else
         env.out.print("error: day " + day + " not found")
       end
