@@ -6,7 +6,6 @@ module AOC.Parsing where
 
 -- import
 
-import           Control.Monad
 import           Text.Parsec
 import           Text.Parsec.String
 
@@ -34,8 +33,12 @@ nameLiteral :: Parser String
 nameLiteral = lexeme $ many1 lower
 
 intLiteral :: Parser Int
-intLiteral = lexeme $ fmap read (liftM2 (:) (char '-') number <|> number)
-  where number = many1 digit
+intLiteral = lexeme $ choice
+  [ char '-' >> fmap negate number
+  , char '+' >> number
+  , number
+  ]
+  where number = read <$> many1 digit
 
 
 
