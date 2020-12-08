@@ -149,12 +149,10 @@ runUntilEnd :: MonadVM m => m EndType
 runUntilEnd = go S.empty
   where go !seen = do
           index <- eval rPC
-          current >>= \case
-            Nothing -> pure OutOfBounds
-            Just _  -> do
-              if S.member index seen
-              then pure Loop
-              else step >> go (S.insert index seen)
+          inst  <- current
+          if | isNothing inst      -> pure OutOfBounds
+             | S.member index seen -> pure Loop
+             | otherwise           -> step >> go (S.insert index seen)
 
 part1 :: Program -> ([String], Int)
 part1 program = runVM program $ runUntilEnd >> eval rACC
