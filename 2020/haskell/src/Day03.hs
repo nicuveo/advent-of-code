@@ -16,7 +16,7 @@ import           AOC
 type Input = (Int, [S.IntSet])
 
 parseInput :: String -> Input
-parseInput input = (length $ head $ rows, mkSet <$> rows)
+parseInput input = (length $ head rows, mkSet <$> rows)
   where rows  = lines input
         mkSet = S.fromList . elemIndices '#'
 

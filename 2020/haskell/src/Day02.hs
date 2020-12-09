@@ -8,7 +8,7 @@ import           Data.Maybe
 import           Text.Parsec
 import           Text.Parsec.Char
 
-import           AOC              as AOC
+import           AOC
 
 
 

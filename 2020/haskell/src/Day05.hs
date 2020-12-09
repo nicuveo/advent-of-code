@@ -1,6 +1,3 @@
-{-# LANGUAGE ViewPatterns #-}
-
-
 -- import
 
 import           Control.Monad

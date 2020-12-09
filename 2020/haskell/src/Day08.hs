@@ -1,7 +1,6 @@
 {-# LANGUAGE BangPatterns      #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE MultiWayIf        #-}
 
 -- import
@@ -129,7 +128,7 @@ runVM program exec = (logs, result)
 duplicateState :: VM ()
 duplicateState = do
   (s :| _) <- MS.get
-  MS.modify $ (s <|)
+  MS.modify (s <|)
 
 popState :: VM ()
 popState = do
