@@ -79,14 +79,15 @@ pureVisit cache prev (current:adapters)
 -- version 2
 
 part2b :: Input -> Int
-part2b input = foldr visit2b M.empty adapters M.! 0
+part2b input = snd $ head $ foldr visit2b [] adapters
   where adapters = 0 : sort input ++ [maximum input + 3]
 
-visit2b :: Int -> Cache -> Cache
-visit2b current cache
-  | M.null cache = M.singleton current 1
-  | otherwise    = M.insert current result cache
-    where result = sum [value | (key, value) <- M.assocs cache, key - current <= 3]
+visit2b :: Int -> [(Int,Int)] -> [(Int,Int)]
+visit2b current cache = (current,result) : take 2 cache
+    where result = max 1 $ sum $ do
+            (key, value) <- cache
+            guard $ key - current <= 3
+            pure value
 
 
 
