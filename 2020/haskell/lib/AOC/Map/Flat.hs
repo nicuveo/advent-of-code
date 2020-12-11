@@ -5,7 +5,7 @@ module AOC.Map.Flat where
 -- imports
 
 import           Control.Exception
-import qualified Data.Vector.Unboxed as V
+import qualified Data.Vector       as V
 import           Safe
 
 import           AOC.Point
@@ -14,7 +14,7 @@ import           AOC.Point
 
 -- type
 
-data FlatMap a = FlatMap { fmapData   :: V.Vector a
+data FlatMap a = FlatMap { fmapData   :: !(V.Vector a)
                          , fmapWidth  :: {-# UNPACK #-} !Int
                          , fmapHeight :: {-# UNPACK #-} !Int
                          } deriving (Eq, Ord)
@@ -25,12 +25,12 @@ type Index = Int
 
 -- constructors
 
-fromList :: V.Unbox a => Int -> Int -> [a] -> FlatMap a
+fromList :: Int -> Int -> [a] -> FlatMap a
 fromList width height raw
   | length raw /= width * height = error "fromList: wrong number of elements"
   | otherwise = FlatMap (V.fromList raw) width height
 
-from2DList :: V.Unbox a => [[a]] -> FlatMap a
+from2DList :: [[a]] -> FlatMap a
 from2DList lists
   | any ((/= width) . length) lists = error "from2DList: not all rows have the same length"
   | otherwise = FlatMap (V.fromList $ concat lists) width height
@@ -41,17 +41,17 @@ from2DList lists
 
 -- to list
 
-toList :: V.Unbox a => FlatMap a -> [a]
+toList :: FlatMap a -> [a]
 toList = V.toList . fmapData
 
 
 
 -- accessors
 
-(!) :: V.Unbox a => FlatMap a -> Point -> a
+(!) :: FlatMap a -> Point -> a
 g ! p =  fmapData g V.! toIndex g p
 
-(!?) :: V.Unbox a => FlatMap a -> Point -> Maybe a
+(!?) :: FlatMap a -> Point -> Maybe a
 g !? p
   | inBounds g p = Just $ g ! p
   | otherwise    = Nothing
@@ -69,7 +69,7 @@ allPoints m = Point <$> mapYs m <*> mapXs m
 
 -- update
 
-updateWith :: (V.Unbox a, V.Unbox b) => (V.Vector a -> V.Vector b) -> FlatMap a -> FlatMap b
+updateWith :: (V.Vector a -> V.Vector b) -> FlatMap a -> FlatMap b
 updateWith f m@(FlatMap v _ _) = m { fmapData = assert (V.length v == V.length w) w }
   where w = f v
 
@@ -77,7 +77,7 @@ updateWith f m@(FlatMap v _ _) = m { fmapData = assert (V.length v == V.length w
 
 -- mapping
 
-pmap :: (V.Unbox a, V.Unbox b) => (Point -> a -> b) -> FlatMap a -> FlatMap b
+pmap :: (Point -> a -> b) -> FlatMap a -> FlatMap b
 pmap f g = updateWith (V.imap $ f . fromIndex g) g
 
 
@@ -100,10 +100,10 @@ fourNeighbouringPointsOf f = filter (inBounds f) . fourNeighboursOf
 eightNeighbouringPointsOf :: FlatMap a -> Point -> [Point]
 eightNeighbouringPointsOf f = filter (inBounds f) . eightNeighboursOf
 
-fourMapNeighboursOf :: V.Unbox a => FlatMap a -> Point -> [a]
+fourMapNeighboursOf :: FlatMap a -> Point -> [a]
 fourMapNeighboursOf f = map (f !) . fourNeighbouringPointsOf f
 
-eightMapNeighboursOf :: V.Unbox a => FlatMap a -> Point -> [a]
+eightMapNeighboursOf :: FlatMap a -> Point -> [a]
 eightMapNeighboursOf f = map (f !) . eightNeighbouringPointsOf f
 
 
@@ -120,7 +120,7 @@ fromIndex m i = uncurry Point $ divMod i $ fmapWidth m
 
 -- display
 
-displayWith :: V.Unbox a => (Point -> a -> String) -> FlatMap a -> String
+displayWith :: (Point -> a -> String) -> FlatMap a -> String
 displayWith f g =
   unlines [ concat [ let p = Point y x in f p $ g ! p
                    | x <- mapXs g
