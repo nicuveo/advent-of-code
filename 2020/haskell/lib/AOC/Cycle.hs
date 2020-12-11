@@ -37,10 +37,10 @@ findCycleM stepFun = run M.empty 0
                        else (s,   l)
 
 
-findFixPoint :: Ord a => (a -> a) -> a -> (Int, a)
+findFixPoint :: Eq a => (a -> a) -> a -> (Int, a)
 findFixPoint f = runIdentity . findFixPointM (return . f)
 
-findFixPointM :: (Monad m, Ord a) => (a -> m a) -> a -> m (Int, a)
+findFixPointM :: (Monad m, Eq a) => (a -> m a) -> a -> m (Int, a)
 findFixPointM stepFun = run 0
   where run !n !a = do
           b <- stepFun a
