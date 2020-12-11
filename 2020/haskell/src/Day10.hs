@@ -94,11 +94,11 @@ visit2b current cache = (current,result) : take 2 cache
 -- golfed version
 
 part1Golfed :: String -> Int
-part1Golfed i=1#i*3#i
-x#i=sum[1|(a,b)<-zip=<<tail$0-3:0:sort(read<$>lines i),a-b==x]
+part1Golfed i=1#i*(1+3#i)
+x#(sort.map read.lines->i)=sum[1|(a,b)<-zip(0:i)i,b-a==x]
 
 part2Golfed :: String -> Int
-part2Golfed(sort.map read.lines->i)=snd$foldr(\x c->(x,max 1$sum[b |(a,b)<-c,a-x<=3]):c)[](0:i++[last i+3])!!0
+part2Golfed(sort.map read.lines->i)=snd$foldr(\x c->(x,max 1$sum[b|(a,b)<-c,a-x<4]):c)[](0:i)!!0
 
 
 
