@@ -107,8 +107,8 @@ executable animation_test
     , vector
   default-language: Haskell2010
 
-executable day13
-  main-is: src/Day13.hs
+executable day15
+  main-is: src/Day15.hs
   other-modules:
       Paths_aoc
   hs-source-dirs:
