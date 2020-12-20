@@ -2,9 +2,7 @@
 
 -- import
 
-import           Control.Monad
 import           Data.Either
-import           Data.Function      (on)
 import qualified Data.IntMap        as M
 import           Data.List.Split    (splitOn)
 import           Data.Maybe
@@ -13,8 +11,6 @@ import           Text.Parsec.Char
 import           Text.Parsec.String
 
 import           AOC
-
-import           Debug.Trace
 
 
 
