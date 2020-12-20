@@ -107,51 +107,8 @@ executable animation_test
     , vector
   default-language: Haskell2010
 
-executable day17
-  main-is: src/Day17.hs
-  other-modules:
-      Paths_aoc
-  hs-source-dirs:
-      ./.
-      src/common
-  ghc-options: -Wall -fwarn-tabs -fno-warn-type-defaults -O2 -threaded -rtsopts -with-rtsopts=-N4 -fno-warn-missing-signatures -fno-warn-unused-top-binds -fno-warn-unused-do-bind -fno-warn-unused-imports
-  build-depends:
-      MissingH
-    , QuickCheck
-    , aoc
-    , array
-    , base >=4.7 && <5
-    , base16-bytestring
-    , bytestring
-    , containers
-    , cryptohash-md5
-    , data-has
-    , extra
-    , filepath
-    , hashable
-    , lens
-    , monad-loops
-    , monad-validate
-    , mtl
-    , parallel
-    , parsec
-    , pqueue
-    , primitive
-    , random
-    , safe
-    , split
-    , string-qq
-    , tasty
-    , tasty-hunit
-    , tasty-quickcheck
-    , time
-    , transformers-base
-    , unordered-containers
-    , vector
-  default-language: Haskell2010
-
-executable day18
-  main-is: src/Day18.hs
+executable day19
+  main-is: src/Day19.hs
   other-modules:
       Paths_aoc
   hs-source-dirs:
