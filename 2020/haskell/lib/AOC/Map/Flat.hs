@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveFunctor #-}
+
 module AOC.Map.Flat where
 
 
@@ -17,7 +19,7 @@ import           AOC.Point
 data FlatMap a = FlatMap { fmapData   :: !(V.Vector a)
                          , fmapWidth  :: {-# UNPACK #-} !Int
                          , fmapHeight :: {-# UNPACK #-} !Int
-                         } deriving (Eq, Ord)
+                         } deriving (Eq, Ord, Functor)
 
 type Index = Int
 
