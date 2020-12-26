@@ -56,6 +56,9 @@ braces = between (symbol "{") (symbol "}")
 brackets :: Parser a -> Parser a
 brackets = between (symbol "[") (symbol "]")
 
+commaSeparated :: Parser a -> Parser [a]
+commaSeparated = (`sepBy` symbol ",")
+
 
 
 -- combinators
