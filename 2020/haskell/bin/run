@@ -12,5 +12,5 @@ if test -n "$GHCOPTS"; then
 fi
 
 stack build $opts aoc:$exe
-ulimit -v 5000000 -m 5000000
+ulimit -v 5000000
 stack exec $exe -- $arg "$@"
