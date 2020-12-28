@@ -83,4 +83,5 @@ executables:
   # day18: {<<: *exe, main: src/Day18.hs}
   # day19: {<<: *exe, main: src/Day19.hs}
   # day20: {<<: *exe, main: src/Day20.hs}
-  day21: {<<: *exe, main: src/Day21.hs}
+  # day21: {<<: *exe, main: src/Day21.hs}
+  day22: {<<: *exe, main: src/Day22.hs}
