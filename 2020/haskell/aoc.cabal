@@ -45,6 +45,7 @@ library
     , hashable
     , lens
     , monad-loops
+    , monad-st
     , monad-validate
     , mtl
     , parallel
@@ -88,6 +89,7 @@ executable animation_test
     , hashable
     , lens
     , monad-loops
+    , monad-st
     , monad-validate
     , mtl
     , parallel
@@ -107,8 +109,8 @@ executable animation_test
     , vector
   default-language: Haskell2010
 
-executable day22
-  main-is: src/Day22.hs
+executable day23
+  main-is: src/Day23.hs
   other-modules:
       Paths_aoc
   hs-source-dirs:
@@ -131,6 +133,7 @@ executable day22
     , hashable
     , lens
     , monad-loops
+    , monad-st
     , monad-validate
     , mtl
     , parallel
@@ -174,6 +177,7 @@ executable pf_test
     , hashable
     , lens
     , monad-loops
+    , monad-st
     , monad-validate
     , mtl
     , parallel
