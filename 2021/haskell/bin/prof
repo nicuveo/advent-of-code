@@ -1,0 +1,15 @@
+#! /usr/bin/env bash
+
+set -e
+
+exe="$1"; shift
+arg=''
+if [ $# -eq 0 ] ; then
+    arg="../input"
+fi
+
+opts="--profiling --executable-profiling --library-profiling"
+
+stack build $opts aoc:$exe
+stack exec  $opts $exe -- +RTS -p -RTS "$arg" "$@"
+profiteur $exe.prof
