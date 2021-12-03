@@ -41,7 +41,7 @@ number = lexeme $ choice
 -- language
 
 symbol :: String -> Parser String
-symbol = lexeme . string
+symbol = lexeme . try . string
 
 parens :: Parser a -> Parser a
 parens = between (symbol "(") (symbol ")")
