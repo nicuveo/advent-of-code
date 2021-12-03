@@ -12,20 +12,23 @@ import           AOC
 
 -- input
 
-type Input = String
+type Input = [Int]
 
 parseInput :: String -> Input
-parseInput = parseLinesWith line
-  where line = undefined
+parseInput = map read . lines
 
 
 -- solution
 
-part1 :: Input -> String
-part1 = undefined
+part1 :: Input -> Int
+part1 [] = 0
+part1 l  = countTrue $ zipWith (<) l (tail l)
 
-part2 :: Input -> String
-part2 = undefined
+part2 :: Input -> Int
+part2 (x:a:b:y:l)
+  | y > x     = 1 + part2 (a:b:y:l)
+  | otherwise =     part2 (a:b:y:l)
+part2 _ = 0
 
 
 -- main
@@ -42,4 +45,4 @@ main = aocMain 01 $ \rawData -> do
   print $ part2 realInput
 
 example :: String
-example = ""
+example = "199\n200\n208\n210\n200\n207\n240\n269\n260\n263"
