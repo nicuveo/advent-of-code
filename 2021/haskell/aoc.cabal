@@ -81,8 +81,6 @@ library
 
 executable animation_test
   main-is: src/AnimationTest.hs
-  other-modules:
-      Paths_aoc
   hs-source-dirs:
       ./
       src/common
@@ -138,10 +136,8 @@ executable animation_test
     , vector
   default-language: Haskell2010
 
-executable day05
-  main-is: src/Day05.hs
-  other-modules:
-      Paths_aoc
+executable day06
+  main-is: src/Day06.hs
   hs-source-dirs:
       ./
       src/common
@@ -199,8 +195,6 @@ executable day05
 
 executable pf_test
   main-is: src/PathFindingTest.hs
-  other-modules:
-      Paths_aoc
   hs-source-dirs:
       ./
       src/common
