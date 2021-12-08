@@ -1,8 +1,8 @@
 -- import
 
-import Control.Parallel.Strategies
 import           Control.Monad
-import           Data.Function    (on)
+import           Control.Parallel.Strategies
+import           Data.Function               (on)
 import           Data.List
 import           Data.Maybe
 import           Text.Parsec
@@ -22,17 +22,17 @@ parseInput = parseWith $ number `sepBy` symbol ","
 -- solution
 
 part1 :: Input -> Int
-part1 (sort -> crabs) = minimum $ parMap rseq fuel [minX .. maxX]
+part1 crabs = minimum $ parMap rseq fuel [minX .. maxX]
   where
-    minX = head crabs
-    maxX = last crabs
+    minX = minimum crabs
+    maxX = maximum crabs
     fuel x = sum $ map (abs . subtract x) crabs
 
 part2 :: Input -> Int
-part2 (sort -> crabs) = minimum $ parMap rseq fuel [minX .. maxX]
+part2 crabs = minimum $ parMap rseq fuel [minX .. maxX]
   where
-    minX = head crabs
-    maxX = last crabs
+    minX = minimum crabs
+    maxX = maximum crabs
     fuel x = sum $ map (triangular . abs . subtract x) crabs
     triangular x = (x * (x+1)) `div` 2
 
