@@ -21,10 +21,10 @@ parseInput = parseLinesWith line
 
 -- solution
 
-part1 :: Input -> String
+part1 :: Input -> Int
 part1 = undefined
 
-part2 :: Input -> String
+part2 :: Input -> Int
 part2 = undefined
 
 
