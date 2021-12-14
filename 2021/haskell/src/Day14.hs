@@ -1,6 +1,7 @@
 -- import
 
 import           Control.Monad
+import           Control.Monad.State
 import           Data.Function       (on)
 import           Data.Hashable       (Hashable)
 import           Data.HashMap.Strict (HashMap)
@@ -9,7 +10,8 @@ import           Data.List
 import           Data.Maybe
 import           Data.Semigroup
 import           Data.Strict.These
-import           Text.Parsec
+import           Data.Traversable    (for)
+import           Text.Parsec         hiding (State)
 import           Text.Parsec.Char
 
 import           AOC.Parsing
@@ -37,33 +39,40 @@ parseInput = parseWith $ do
 
 -- solution
 
-addN :: (Eq k, Hashable k) => k -> Int -> HashMap k Int -> HashMap k Int
-addN = M.insertWith (+)
+data PolymerTree = PolymerTree Pair ~PolymerTree ~PolymerTree
 
-fromPairCountToCharCount :: HashMap Pair Int -> HashMap Char Int
-fromPairCountToCharCount = M.foldrWithKey' step M.empty
+mkTrees :: HashMap Pair Char -> HashMap Pair PolymerTree
+mkTrees rules = trees
   where
-    step :: Pair -> Int -> HashMap Char Int -> HashMap Char Int
-    step (_,r) n = addN r n
+    trees = M.mapWithKey mkTree rules
+    mkTree p@(l,r) c = PolymerTree p (trees M.! (l,c)) (trees M.! (c,r))
 
-countRightChars :: Int -> HashMap Pair Char -> [Pair] -> HashMap Char Int
-countRightChars iteration rules start =
-  fromPairCountToCharCount $ iterate step startCount !! iteration
-  where
-    startCount = M.fromListWith (+) $ map (,1) start
-    step = M.foldrWithKey' transform M.empty
-    transform p@(l,r) n =
-      let
-        c = rules M.! p
-      in
-        addN (l,c) n . addN (c,r) n
+type Cache = HashMap (Pair, Int) (HashMap Char Int)
+
+countRightChars :: Int -> PolymerTree -> State Cache (HashMap Char Int)
+countRightChars 0 (PolymerTree (_, r) _ _) = pure $ M.singleton r 1
+countRightChars depth (PolymerTree p l r) = do
+  cache <- get
+  case M.lookup (p, depth) cache of
+    Just c  -> pure c
+    Nothing -> do
+      countL <- countRightChars (depth-1) l
+      countR <- countRightChars (depth-1) r
+      let result = M.unionWith (+) countL countR
+      modify $ M.insert (p, depth) result
+      pure result
 
 solve :: Int -> String -> HashMap Pair Char -> Int
-solve iteration start rules = maximum charCount - minimum charCount
-  where
-    pairs l = zip l $ tail l
+solve depth start rules = flip evalState M.empty $ do
+  counts <- for pairs $ \p ->
+    countRightChars depth $ trees M.! p
+  let
     charCount = M.elems $
-      addN (head start) 1 $ countRightChars iteration rules $ pairs start
+      M.insertWith (+) (head start) 1 $ foldl' (M.unionWith (+)) M.empty counts
+  pure $ maximum charCount - minimum charCount
+  where
+    pairs = zip start $ tail start
+    trees = mkTrees rules
 
 part1 :: Input -> Int
 part1 = uncurry $ solve 10
