@@ -3,9 +3,9 @@
 import           Control.Monad
 import           Control.Monad.State
 import           Data.Function       (on)
-import           Data.Hashable       (Hashable)
-import           Data.HashMap.Strict (HashMap)
+import           Data.HashMap.Strict (HashMap, (!))
 import qualified Data.HashMap.Strict as M
+import           Data.Hashable       (Hashable)
 import           Data.List
 import           Data.Maybe
 import           Data.Semigroup
@@ -45,34 +45,46 @@ mkTrees :: HashMap Pair Char -> HashMap Pair PolymerTree
 mkTrees rules = trees
   where
     trees = M.mapWithKey mkTree rules
-    mkTree p@(l,r) c = PolymerTree p (trees M.! (l,c)) (trees M.! (c,r))
+    mkTree p@(l,r) c = PolymerTree p (trees ! (l,c)) (trees ! (c,r))
 
-type Cache = HashMap (Pair, Int) (HashMap Char Int)
-
-countRightChars :: Int -> PolymerTree -> State Cache (HashMap Char Int)
-countRightChars 0 (PolymerTree (_, r) _ _) = pure $ M.singleton r 1
-countRightChars depth (PolymerTree p l r) = do
+memoize
+  :: (Eq k, Hashable k, MonadState (HashMap k a) m)
+  => k    -- ^ key
+  -> m a  -- ^ action to generate the value
+  -> m a  -- ^ resulting value
+memoize key action = do
   cache <- get
-  case M.lookup (p, depth) cache of
-    Just c  -> pure c
-    Nothing -> do
-      countL <- countRightChars (depth-1) l
-      countR <- countRightChars (depth-1) r
-      let result = M.unionWith (+) countL countR
-      modify $ M.insert (p, depth) result
+  case M.lookup key cache of
+    Just value -> pure value
+    Nothing    -> do
+      result <- action
+      modify $ M.insert key result
       pure result
+
+countRightChars
+  :: Int
+  -> PolymerTree
+  -> State (HashMap (Pair, Int) (HashMap Char Int)) (HashMap Char Int)
+countRightChars depth (PolymerTree p@(_, pr) tl tr)
+  | depth == 0 = pure $ M.singleton pr 1
+  | otherwise  = memoize (p, depth) $ do
+      countL <- countRightChars (depth-1) tl
+      countR <- countRightChars (depth-1) tr
+      pure $ M.unionWith (+) countL countR
 
 solve :: Int -> String -> HashMap Pair Char -> Int
 solve depth start rules = flip evalState M.empty $ do
-  counts <- for pairs $ \p ->
-    countRightChars depth $ trees M.! p
   let
-    charCount = M.elems $
-      M.insertWith (+) (head start) 1 $ foldl' (M.unionWith (+)) M.empty counts
-  pure $ maximum charCount - minimum charCount
-  where
     pairs = zip start $ tail start
     trees = mkTrees rules
+  counts <- for pairs $ \p ->
+    countRightChars depth $ trees ! p
+  let
+    charCount =
+      M.elems $
+      M.insertWith (+) (head start) 1 $
+      foldl' (M.unionWith (+)) M.empty counts
+  pure $ maximum charCount - minimum charCount
 
 part1 :: Input -> Int
 part1 = uncurry $ solve 10

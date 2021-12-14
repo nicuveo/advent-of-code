@@ -138,64 +138,6 @@ executable animation_test
     , vector
   default-language: Haskell2010
 
-executable day11
-  main-is: src/Day11.hs
-  hs-source-dirs:
-      ./
-      src/common
-  default-extensions:
-      BlockArguments
-      ConstraintKinds
-      DeriveFoldable
-      DeriveFunctor
-      DeriveTraversable
-      FlexibleContexts
-      FlexibleInstances
-      LambdaCase
-      MultiWayIf
-      OverloadedStrings
-      ScopedTypeVariables
-      StrictData
-      TupleSections
-      TypeApplications
-      TypeFamilies
-      ViewPatterns
-  ghc-options: -Wall -fwarn-tabs -fno-warn-type-defaults -O2 -threaded -rtsopts -with-rtsopts=-N4 -fno-warn-missing-signatures -fno-warn-unused-top-binds -fno-warn-unused-do-bind -fno-warn-unused-imports
-  build-depends:
-      QuickCheck
-    , aoc
-    , array
-    , base >=4.7 && <5
-    , base16-bytestring
-    , bytestring
-    , containers
-    , cryptohash-md5
-    , data-has
-    , extra
-    , filepath
-    , hashable
-    , lens
-    , monad-loops
-    , monad-st
-    , mtl
-    , parallel
-    , parsec
-    , pqueue
-    , primitive
-    , random
-    , safe
-    , split
-    , strict
-    , string-qq
-    , tasty
-    , tasty-hunit
-    , tasty-quickcheck
-    , time
-    , transformers-base
-    , unordered-containers
-    , vector
-  default-language: Haskell2010
-
 executable day14
   main-is: src/Day14.hs
   hs-source-dirs:
