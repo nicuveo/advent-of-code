@@ -97,17 +97,17 @@ data PFState a = PFState
 
 -- | Initializes the pathfinder's state.
 mkPFState
-  :: (Eq a, Hashable a)
+  :: (Hashable a)
   => (a -> [(Int, a)]) -- ^ edges function
   -> (a -> Int)        -- ^ heuristic
   -> a                 -- ^ start
   -> a                 -- ^ end
   -> PFState a
 mkPFState edges heuristic start end =
-  PFState edges heuristic start end queue parentMap
+  PFState edges heuristic start end queue nodeMap
   where
     queue = Q.singleton $ Cell (heuristic start) 0 start
-    parentMap = M.singleton start (start, 0)
+    nodeMap = M.singleton start (start, 0)
 
 -- | Gets the best node to be processed.
 currentNode :: PFState a -> a
