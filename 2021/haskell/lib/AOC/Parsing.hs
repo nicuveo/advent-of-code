@@ -22,7 +22,7 @@ parseLinesWith p s = parseWith p <$> lines s
 
 -- elements
 
-lexeme :: Parser a -> Parser a
+lexeme :: Parsec String u a -> Parsec String u a
 lexeme p = p <* spaces
 
 identifier :: Parser String
