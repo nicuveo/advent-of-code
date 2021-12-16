@@ -39,6 +39,7 @@ library
       LambdaCase
       MultiWayIf
       OverloadedStrings
+      RecordWildCards
       ScopedTypeVariables
       StrictData
       TupleSections
@@ -96,6 +97,7 @@ executable animation_test
       LambdaCase
       MultiWayIf
       OverloadedStrings
+      RecordWildCards
       ScopedTypeVariables
       StrictData
       TupleSections
@@ -138,8 +140,8 @@ executable animation_test
     , vector
   default-language: Haskell2010
 
-executable day14
-  main-is: src/Day14.hs
+executable day15
+  main-is: src/Day15.hs
   hs-source-dirs:
       ./
       src/common
@@ -154,6 +156,7 @@ executable day14
       LambdaCase
       MultiWayIf
       OverloadedStrings
+      RecordWildCards
       ScopedTypeVariables
       StrictData
       TupleSections
@@ -212,6 +215,7 @@ executable pf_test
       LambdaCase
       MultiWayIf
       OverloadedStrings
+      RecordWildCards
       ScopedTypeVariables
       StrictData
       TupleSections
