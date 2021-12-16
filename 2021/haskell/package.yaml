@@ -16,6 +16,7 @@ default-extensions:
   - LambdaCase
   - MultiWayIf
   - OverloadedStrings
+  - RecordWildCards
   - ScopedTypeVariables
   - StrictData
   - TupleSections

@@ -1,5 +1,5 @@
 import           Data.Bool
-import qualified Data.Map.Lazy as M
+import qualified Data.HashMap.Strict as M
 import           Data.Ratio
 import           System.Random
 
@@ -37,22 +37,20 @@ render :: Maze -> PFState Point -> String
 render m s = displayWith r m
   where r _ '#' = fgColor white $ bgColor gray "▇▇"
         r p _
-          | Just c <- pfCost s p = b p $ fgColor (f c) "▒▒"
-          | otherwise            = "  "
+          | Just c <- costSoFar s p = b p $ fgColor (f c) "▒▒"
+          | otherwise               = "  "
         f c = interpolateN distanceMap $ c % maxCost
-        b p
-          | pfFinished s = q $ p `elem` map fst (pfPath s)
-          | otherwise    = q $ p `elem` [ pfStart   s
-                                        , pfEnd     s
-                                        , pfCurrent s
-                                        ]
+        b p = q $ p `elem`
+          case reconstructPath s of
+            Nothing   -> [pfStart s, pfEnd s, currentNode s]
+            Just path -> map snd path
         q = bool id $ bgColor white
-        maxCost = max 1 $ maximum $ map snd $ M.elems $ pfMap s
+        maxCost = max 1 $ maximum $ map snd $ M.elems $ pfNodeInfo s
 
 step :: PFState Point -> Maybe (Logs, PFState Point)
 step s
-  | pfFinished s = Nothing
-  | otherwise    = let n = pfStep s in Just ([], n)
+  | hasFoundAnswer s = Nothing
+  | otherwise        = let n = pathFindingStep s in Just ([], n)
 
 
 
