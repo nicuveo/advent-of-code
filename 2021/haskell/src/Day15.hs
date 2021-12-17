@@ -35,9 +35,9 @@ edges
   :: Cave
   -> Point
   -> [(Int, Point)]
-edges cave point = zip
-  (fourMapNeighboursOf cave point)
-  (fourNeighbouringPointsOf cave point)
+edges cave point = do
+  neighbour <- fourNeighbouringPointsOf cave point
+  pure (cave ! neighbour, neighbour)
 
 heuristic
   :: Point
