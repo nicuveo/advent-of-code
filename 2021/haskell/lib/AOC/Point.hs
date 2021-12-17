@@ -20,7 +20,8 @@ data Point = Point
 instance Show Point where
   show (Point y x) = printf "<y:%d,x:%d>" y x
 
-instance Hashable Point
+instance Hashable Point where
+  hashWithSalt s (Point y x) = hashWithSalt s (y,x)
 
 type Vector = Point
 
