@@ -142,8 +142,8 @@ executable animation_test
     , vector
   default-language: Haskell2010
 
-executable day16
-  main-is: src/Day16.hs
+executable day17
+  main-is: src/Day17.hs
   hs-source-dirs:
       ./
       src/common
