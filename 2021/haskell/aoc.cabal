@@ -37,6 +37,7 @@ library
       FlexibleContexts
       FlexibleInstances
       LambdaCase
+      MultiParamTypeClasses
       MultiWayIf
       OverloadedStrings
       RecordWildCards
@@ -95,6 +96,7 @@ executable animation_test
       FlexibleContexts
       FlexibleInstances
       LambdaCase
+      MultiParamTypeClasses
       MultiWayIf
       OverloadedStrings
       RecordWildCards
@@ -154,6 +156,7 @@ executable day16
       FlexibleContexts
       FlexibleInstances
       LambdaCase
+      MultiParamTypeClasses
       MultiWayIf
       OverloadedStrings
       RecordWildCards
@@ -213,6 +216,7 @@ executable pf_test
       FlexibleContexts
       FlexibleInstances
       LambdaCase
+      MultiParamTypeClasses
       MultiWayIf
       OverloadedStrings
       RecordWildCards

@@ -9,6 +9,8 @@ import           Data.List
 import           Data.Maybe
 import           Text.Parsec
 import           Text.Parsec.Char
+import           Text.Parsec.Pos
+import           Text.Parsec.Prim
 
 import           AOC.Parsing
 import           AOC.Runtime
@@ -33,26 +35,42 @@ data Expression
   deriving Show
 
 
--- parsers
+-- stream
 
-type BITSParser = Parsec String Int
+data BitStream = BitStream
+  { stream     :: Integer
+  , currentBit :: Int
+  }
+
+instance Monad m => Stream BitStream m Bool where
+  uncons s@BitStream{..} = pure $
+    if currentBit < 0
+    then Nothing
+    else Just (testBit stream currentBit, s{currentBit = currentBit - 1})
+
+type BITSParser = Parsec BitStream Int
+
+bit :: BITSParser Bool
+bit = do
+  r <- tokenPrim showAsInt increasePos Just
+  modifyState succ
+  pure r
+  where
+    showAsInt = bool "0" "1"
+    increasePos pos _ _ = incSourceColumn pos 1
+
+zero :: BITSParser ()
+zero = bit >>= \case
+  False -> pure ()
+  True  -> fail "expected 0, got 1"
 
 bitsToInt :: [Bool] -> Int
 bitsToInt = foldl' step 0
   where
     step accum isOn = 2 * accum + fromEnum isOn
 
-bit :: BITSParser Bool
-bit = do
-  r <- (False <$ zero) <|> (True <$ one)
-  modifyState succ
-  pure r
 
-zero :: BITSParser ()
-zero = lexeme $ void $ char '0'
-
-one :: BITSParser ()
-one = lexeme $ void $ char '1'
+-- parsers
 
 intOfSize :: Int -> BITSParser Int
 intOfSize n = bitsToInt <$> count n bit
@@ -121,10 +139,11 @@ subPacketsByCount = do
 
 -- input parsing
 
-transformInput :: String -> String
-transformInput = unlines . map \x -> map (toChr . testBit (digitToInt x)) [3,2,1,0]
+transformInput :: String -> BitStream
+transformInput = foldl' step (BitStream 0 (-1))
   where
-    toChr = bool '0' '1'
+    step (BitStream s cb) c =
+      BitStream (16 * s + toInteger (digitToInt c)) (cb + 4)
 
 parseInput :: String -> Packet
 parseInput =
