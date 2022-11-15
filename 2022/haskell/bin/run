@@ -1,0 +1,16 @@
+#! /usr/bin/env bash
+
+set -e
+
+exe="$1"; shift
+arg=''
+if [ $# -eq 0 ] ; then
+    arg="../input"
+fi
+if test -n "$GHCOPTS"; then
+   opts="--ghc-options $GHCOPTS"
+fi
+
+stack build $opts aoc:$exe
+ulimit -v 6000000
+stack exec $exe -- $arg "$@"
