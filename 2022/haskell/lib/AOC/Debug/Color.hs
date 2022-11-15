@@ -48,4 +48,4 @@ interpolateN l w = if b == n
                    else interpolate (w * r n - r b) (l !! b) (l !! succ b)
   where n = length l - 1
         b = floor $ w * r n
-        r = (%1)
+        r = (% 1)

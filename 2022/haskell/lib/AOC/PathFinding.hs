@@ -39,7 +39,7 @@ findPath
   -> a                  -- ^ starting point
   -> a                  -- ^ end point
   -> Maybe [(Int, a)]
-findPath edges start end = findPathWith edges (const 0) start end
+findPath edges = findPathWith edges (const 0)
 
 -- | Returns the shortest path from start point to end point, if
 -- any. Uses the provided function to find all the neighbours of any
@@ -66,7 +66,7 @@ unsafeFindPath
   -> a
   -> a
   -> [(Int, a)]
-unsafeFindPath edges start end = unsafeFindPathWith edges (const 0) start end
+unsafeFindPath edges = unsafeFindPathWith edges (const 0)
 
 -- | Like 'findPathWith', but errors if no path is found.
 unsafeFindPathWith
