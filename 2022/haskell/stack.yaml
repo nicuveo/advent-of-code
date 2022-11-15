@@ -3,7 +3,3 @@ resolver:
 
 packages:
   - .
-
-extra-deps:
-  - ghc-lib-parser-9.2.5.20221107@sha256:462cba52f8ad68c7de99e72e3d8e65bec41c8234de37dd68e0c676f3bac32888,12741
-  - ghc-lib-parser-ex-9.2.1.1@sha256:5c8a31fd7fa1f7c4f4f191c869007bf64eb2e12575f6874cd59ebeec83ae177d,3493
