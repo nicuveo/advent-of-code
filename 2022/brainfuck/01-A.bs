@@ -1,0 +1,54 @@
+def is_newline() [C] -> [C,B] {
+  eqc_('\n')
+}
+
+def not_eof() [C] -> [C,B] {
+  nec_(0)
+}
+
+def add_digit() [I,C] -> [I] {
+  pushc('0')
+  swapc
+  subc
+  c_to_i
+  swapi
+  pushi(10)
+  swapi
+  muli
+  addi
+}
+
+def impure main() {
+  // start of list
+  pushi(0)
+  // current elf
+  pushi(0)
+  // current line
+  pushi(0)
+  // process all input
+  push_read
+  while(not_eof) {
+    if (is_newline) {
+      popc
+      if (nei_(0)) {
+        addi
+      }
+      pushi(0)
+      pushc('\n')
+    }
+    if(is_newline not) {
+      add_digit
+      pushc(0)
+    }
+    popc
+    push_read
+  }
+  popc
+  while(eqi_(0)) {
+    popi
+  }
+  while(swapi nei_(0)) {
+    maxi
+  }
+  swapi printi endl
+}
