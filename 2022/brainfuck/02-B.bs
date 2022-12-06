@@ -1,0 +1,79 @@
+def main() {
+  pushi(0)
+  push_read loop {
+    pushc('A') swapc subc
+    push_read readc
+    pushc('X') swapc subc
+    if (eqc_(0)) {
+      popc
+      if (eqc_(0)) {
+        popc
+        pushi(3)
+        addi
+        pushc(0)
+      }
+      if (eqc_(1)) {
+        popc
+        pushi(1)
+        addi
+        pushc(0)
+      }
+      if (eqc_(2)) {
+        popc
+        pushi(2)
+        addi
+        pushc(0)
+      }
+      pushc(0)
+    }
+    if (eqc_(1)) {
+      popc
+      if (eqc_(0)) {
+        popc
+        pushi(4)
+        addi
+        pushc(0)
+      }
+      if (eqc_(1)) {
+        popc
+        pushi(5)
+        addi
+        pushc(0)
+      }
+      if (eqc_(2)) {
+        popc
+        pushi(6)
+        addi
+        pushc(0)
+      }
+      pushc(0)
+    }
+    if (eqc_(2)) {
+      popc
+      if (eqc_(0)) {
+        popc
+        pushi(8)
+        addi
+        pushc(0)
+      }
+      if (eqc_(1)) {
+        popc
+        pushi(9)
+        addi
+        pushc(0)
+      }
+      if (eqc_(2)) {
+        popc
+        pushi(7)
+        addi
+        pushc(0)
+      }
+      pushc(0)
+    }
+    popc popc
+    push_read readc
+  }
+  popc
+  printi endl
+  popi
+}
