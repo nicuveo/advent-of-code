@@ -3,28 +3,27 @@ module Main where
 
 -- import
 
-import Text.Parsec
-import Text.Parsec.Char
+import Data.List       (sort)
+import Data.List.Split
 
 import AOC
 
 
 -- input
 
-type Input = String
+type Input = [Int]
 
 parseInput :: String -> Input
-parseInput = parseLinesWith line
-  where line = undefined
+parseInput = map (sum . map read) . splitOn [""] . lines
 
 
 -- solution
 
 part1 :: Input -> Int
-part1 = undefined
+part1 = maximum
 
 part2 :: Input -> Int
-part2 = undefined
+part2 = sum . take 3 . reverse . sort
 
 
 -- main
@@ -41,4 +40,4 @@ main = aocMain 01 $ \rawData -> do
   print $ part2 realInput
 
 example :: String
-example = ""
+example = "1000\n2000\n3000\n\n4000\n\n5000\n6000\n\n7000\n8000\n9000\n\n10000"
