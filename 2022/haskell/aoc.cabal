@@ -179,8 +179,8 @@ executable animation_test
     , vector
   default-language: Haskell2010
 
-executable day01
-  main-is: src/Day01.hs
+executable day02
+  main-is: src/Day02.hs
   hs-source-dirs:
       ./
   default-extensions:
@@ -257,8 +257,8 @@ executable day01
     , vector
   default-language: Haskell2010
 
-executable day05
-  main-is: src/Day05.hs
+executable day06
+  main-is: src/Day06.hs
   hs-source-dirs:
       ./
   default-extensions:
