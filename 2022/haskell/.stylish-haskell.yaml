@@ -26,7 +26,7 @@ steps:
 
       # Should export lists be sorted?  Sorting is only performed within the
       # export section, as delineated by Haddock comments.
-      sort: true
+      sort: false
 
       # See `separate_lists` for the `imports` step.
       separate_lists: true
@@ -88,7 +88,7 @@ steps:
       # Whether or not to break enums onto several lines
       #
       # Default: false
-      break_enums: false
+      break_enums: true
 
       # Whether or not to break single constructor data types before `=` sign
       #
