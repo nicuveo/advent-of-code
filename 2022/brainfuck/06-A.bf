@@ -79,7 +79,7 @@ loop back to carry values greater than 9
 [-<<<-[->+>+<<]>>[-<<+>>]+<[[-]>-<]>[->[-]<]>]<<<[[-]<<<<----------<+>>>>>]<<<<<
 <<-]>
 
-print the result, including leading zero digits
+print the result including leading zero digits
 >++++++++++++++++++++++++++++++++++++++++++++++++.
 >++++++++++++++++++++++++++++++++++++++++++++++++.
 >++++++++++++++++++++++++++++++++++++++++++++++++.
