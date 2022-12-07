@@ -1,0 +1,103 @@
+def impure moveFar() {
+  [->>>>+<<<<]
+}
+
+def impure moveBack() {
+  >>>>
+  [-<<<<+>>>>]
+  <<<<
+}
+
+def impure sort() {
+  loop {
+    loop {
+      // sort two next items
+      if (dupc2 ltc) {
+        swapc
+      }
+      // move the bigger one far away to free some local buffer
+      moveFar
+
+      // move down the list
+      <
+    }
+
+    // we've reached the end, copy the lowest element back
+    > moveBack
+
+    // and put it behind the 0, so that it's "out"
+    swapc
+
+    // copy everything back
+    > moveBack loop {
+      > moveBack
+    }
+    <
+  }
+}
+
+def step() [C,C,C] -> [C,C] {
+  // [x,y,<accum>]
+  dupc3
+  popc
+  // [x,y,<accum>,x,y]
+  eqc
+  b_to_c
+  addc
+  swapc
+  popc
+  // [x,<accum>]
+}
+
+def impure to_i()  [C,C,C,C] -> [I] {}
+def impure to_cs() [I] -> [C,C,C,C] {}
+
+def main() {
+  // counter
+  pushi(13) to_cs
+
+  // end of list marker
+  pushc(0)
+  // 14 chars of input (we pre-read 13)
+  pushc(0)  push_read
+  push_read push_read
+  push_read push_read
+  push_read push_read
+  push_read push_read
+  push_read push_read
+  push_read push_read
+
+  pushb(true) loop {
+    popb
+
+    // bring counter to top of stack and inc by one
+    rollcn(19, 15)
+    to_i pushi(1) addi to_cs
+    rollcn(19,  4)
+
+    // move all chars down, read next
+    rollcn(14, 13) readc
+
+    // duplicate the full list (including the 0 signal)
+    dupc15
+    sort
+
+    // compare pair-wise down the list
+    step step
+    step step
+    step step
+    step step
+    step step
+    step step
+    step
+    swapc popc c_to_b
+  }
+
+  popb
+  popc popc popc popc popc
+  popc popc popc popc popc
+  popc popc popc popc popc
+
+  to_i printi endl
+  popi
+}
