@@ -34,7 +34,7 @@ import Data.PQueue.Min     as Q
 -- given point. Based on Dijkstra's algorithm (doesn't use a
 -- heuristic).
 findPath
-  :: (Eq a, Hashable a)
+  :: Hashable a
   => (a -> [(Int, a)])  -- ^ all edges from a given point, with cost
   -> a                  -- ^ starting point
   -> a                  -- ^ end point
@@ -49,7 +49,7 @@ findPath edges = findPathWith edges (const 0)
 -- overestimate the cost of the rest of the path, otherwise this
 -- function might return a sub-obtimal path.
 findPathWith
-  :: (Eq a, Hashable a)
+  :: Hashable a
   => (a -> [(Int, a)]) -- ^ all edges from a given point, with cost
   -> (a -> Int)        -- ^ heuristic function
   -> a                 -- ^ starting point
@@ -61,7 +61,7 @@ findPathWith edges heuristic start end = reconstructPath
 
 -- | Like 'findPath', but errors if no path is found.
 unsafeFindPath
-  :: (Eq a, Hashable a)
+  :: Hashable a
   => (a -> [(Int, a)])
   -> a
   -> a
@@ -70,7 +70,7 @@ unsafeFindPath edges = unsafeFindPathWith edges (const 0)
 
 -- | Like 'findPathWith', but errors if no path is found.
 unsafeFindPathWith
-  :: (Eq a, Hashable a)
+  :: Hashable a
   => (a -> [(Int, a)])
   -> (a -> Int)
   -> a
@@ -120,7 +120,7 @@ currentNode = cellNode . Q.findMin . pfQueue
 -- | Extracts the cost of reaching the given point, at that point in
 -- the search.
 costSoFar
-  :: (Eq a, Hashable a)
+  :: Hashable a
   => PFState a  -- ^ the pathfinder's state
   -> a          -- ^ the node
   -> Maybe Int
@@ -132,7 +132,7 @@ hasFoundAnswer :: PFState a -> Bool
 hasFoundAnswer = Q.null . pfQueue
 
 -- | Returns whether we found an actual path.
-hasFoundPath :: (Eq a, Hashable a) => PFState a -> Bool
+hasFoundPath :: Hashable a => PFState a -> Bool
 hasFoundPath s = hasFoundAnswer s && pfEnd s `M.member` pfNodeInfo s
 
 
@@ -170,7 +170,7 @@ instance Show a => Show (Cell a) where
 -- | Performs one step of the computation: takes the most likely
 -- candidate, and if it isn't the goal, add its neighbours to the
 -- queue.
-pathFindingStep :: (Eq a, Hashable a) => PFState a -> PFState a
+pathFindingStep :: Hashable a => PFState a -> PFState a
 pathFindingStep !s
   | hasFoundAnswer s = s
   | otherwise        =
@@ -191,7 +191,7 @@ pathFindingStep !s
           skipToNextValidCandidate $ L.foldl' (insertEdge candidate) newState edges
 
 -- | Reconstruct a path from a successful state
-reconstructPath :: (Eq a, Hashable a) => PFState a -> Maybe [(Int, a)]
+reconstructPath :: Hashable a => PFState a -> Maybe [(Int, a)]
 reconstructPath state
   | hasFoundPath state = Just $ go (pfEnd state) []
   | otherwise = Nothing
@@ -208,7 +208,7 @@ reconstructPath state
 
 -- | Inserts a candidate cell in the queue, if needed.
 insertEdge
-  :: (Eq a, Hashable a)
+  :: Hashable a
   => Cell a      -- ^ cell being considered
   -> PFState a   -- ^ current state
   -> (Int, a)    -- ^ edge to process
@@ -236,7 +236,7 @@ insertEdge Cell{..} state (distance, neighbour) =
 -- | Clears all elements at the beginning of the queue that are
 -- obsolete / irrelevant.
 skipToNextValidCandidate
-  :: (Eq a, Hashable a)
+  :: Hashable a
   => PFState a
   -> PFState a
 skipToNextValidCandidate state =
