@@ -1,0 +1,101 @@
+def main() {
+  pushi(1) // X
+  pushi(0) // cycle
+  pushi(0) // result
+  push_read
+  while (nec_(0)) {
+    #
+    if (eqc_('n')) {
+      readc readc readc readc
+      popc
+      step
+      pushc(0)
+    }
+    if (eqc_('a')) {
+      readc readc readc readc
+      popc
+      addx
+      pushc(0)
+    }
+    readc
+  }
+  popc
+  printi endl
+  popi
+  popi
+  popi
+}
+
+def step() [I,I,I] -> [I,I,I] {
+  // inc cycle by 1
+  swapi pushi(1) addi swapi
+  // copy X and cycle onto the stack
+  dupi3 popi
+  // check if important cycle
+  dupi pushi(20) addi
+  pushi(40) swapi modi
+  i_to_b not b_to_i
+  muli muli addi
+}
+
+def addx() [I,I,I] -> [I,I,I] {
+  step
+  step
+  rolli3(2)
+  read_number
+  addi
+  rolli3(1)
+}
+
+def impure read_number() [] -> [I] {
+  push_read
+  if (eqc_('-')) {
+    read_neg
+    pushc(0)
+  }
+  if (dupc c_to_b) {
+    read_pos
+    pushc(0)
+  }
+  popc
+}
+
+def read_neg() [C] -> [I] {
+  readc
+  c_to_i
+  pushi(48) // '0'
+  subi
+  push_read
+  while(nec_('\n')) {
+    pushc('0')
+    swapc
+    subc
+    c_to_i
+    swapi
+    pushi(10)
+    muli
+    subi
+    push_read
+  }
+  popc
+}
+
+def read_pos() [C] -> [I] {
+  pushc('0')
+  swapc
+  subc
+  c_to_i
+  push_read
+  while(nec_('\n')) {
+    pushc('0')
+    swapc
+    subc
+    c_to_i
+    swapi
+    pushi(10)
+    muli
+    addi
+    push_read
+  }
+  popc
+}
