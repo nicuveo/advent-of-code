@@ -1,0 +1,107 @@
+def main() {
+  pushi(1) // X
+  pushi(0) // cycle
+  push_read
+  while (nec_(0)) {
+    #
+    if (eqc_('n')) {
+      readc readc readc readc
+      popc
+      step
+      pushc(0)
+    }
+    if (eqc_('a')) {
+      readc readc readc readc
+      popc
+      addx
+      pushc(0)
+    }
+    readc
+  }
+  popc
+  popi
+  popi
+  prints("\n")
+}
+
+def step() [I,I] -> [I,I] {
+  // insert newline every 40 characters
+  pushi(40)
+  swapi
+  modi
+  dupi
+  i_to_b not
+  if (dupb) {
+    prints("\n")
+  }
+  popb
+  // get X on top of the stack
+  dupi2 subi pushi(1) addi i_to_c
+  if (lec_(2)) { prints("##") }
+  if (gtc_(2)) { prints("  ") }
+  popc
+  // inc cycle by 1
+  pushi(1) addi
+}
+
+def addx() [I,I] -> [I,I] {
+  step
+  step
+  swapi
+  read_number
+  addi
+  swapi
+}
+
+def impure read_number() [] -> [I] {
+  push_read
+  if (eqc_('-')) {
+    read_neg
+    pushc(0)
+  }
+  if (dupc c_to_b) {
+    read_pos
+    pushc(0)
+  }
+  popc
+}
+
+def read_neg() [C] -> [I] {
+  readc
+  c_to_i
+  pushi(48) // '0'
+  subi
+  push_read
+  while(nec_('\n')) {
+    pushc('0')
+    swapc
+    subc
+    c_to_i
+    swapi
+    pushi(10)
+    muli
+    subi
+    push_read
+  }
+  popc
+}
+
+def read_pos() [C] -> [I] {
+  pushc('0')
+  swapc
+  subc
+  c_to_i
+  push_read
+  while(nec_('\n')) {
+    pushc('0')
+    swapc
+    subc
+    c_to_i
+    swapi
+    pushi(10)
+    muli
+    addi
+    push_read
+  }
+  popc
+}
