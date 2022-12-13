@@ -51,8 +51,8 @@ allPoints g = Point <$> xRange g <*> yRange g
 -- boundary checking
 
 bounds :: Grid a -> (Point, Point)
-bounds m = ( Point (minimum ys) (minimum xs)
-           , Point (maximum ys) (maximum xs)
+bounds m = ( Point (minimum xs) (minimum ys)
+           , Point (maximum xs) (maximum ys)
            )
   where ys = py <$> ks
         xs = px <$> ks

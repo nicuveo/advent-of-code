@@ -84,7 +84,7 @@ bounds m = ( Point 0 0
            )
 
 inBounds :: Grid a -> Point -> Bool
-inBounds m (Point y x) = and [ y >= 0, y < gHeight m
+inBounds m (Point x y) = and [ y >= 0, y < gHeight m
                              , x >= 0, x < gWidth  m
                              ]
 
