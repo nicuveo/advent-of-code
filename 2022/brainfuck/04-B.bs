@@ -1,0 +1,57 @@
+def main() {
+  // accumulator for the answer
+  pushi(0)
+  // until we have a line that starts with eof
+  push_read
+  while(dupc c_to_b) {
+    parse_line
+    // check if there's overlap
+    is_overlapping
+    // add 1 to the accumulator if yes
+    b_to_i addi
+    // start reading next line
+    push_read
+  }
+  popc
+  printi endl
+  popi
+}
+
+def parse_line() [C] -> [C,C,C,C] {
+  number
+  push_read
+  number
+  push_read
+  number
+  push_read
+  number
+}
+
+def number() [C] -> [C] {
+  pushc('0') swapc subc
+  push_read
+  while (gec_('0')) {
+    pushc('0') swapc subc
+    swapc pushc(10) mulc addc
+    push_read
+  }
+  popc
+}
+
+def impure is_overlapping() [C,C,C,C] -> [B] {
+  // a1 b1 a2 b2
+  swapc rollc4(3)
+  // b1 b2 a2 a1
+  dupc2 gtc
+  if (dupb) {
+    popb
+    swapc popc lec swapc popc
+    pushb(true)
+  }
+  if (not dupb) {
+    popb
+    popc swapc popc lec
+    pushb(true)
+  }
+  popb
+}
