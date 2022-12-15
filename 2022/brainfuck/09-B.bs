@@ -1,0 +1,271 @@
+def impure main() {
+  pushi(0) // buffer
+  pushi(0) // buffer
+  pushi(0) // end of list signal
+  pushi(500) // knot #0 x
+  pushi(500) // knot #0 y
+  pushi(500) // knot #1 x
+  pushi(500) // knot #1 y
+  pushi(500) // knot #2 x
+  pushi(500) // knot #2 y
+  pushi(500) // knot #3 x
+  pushi(500) // knot #3 y
+  pushi(500) // knot #4 x
+  pushi(500) // knot #4 y
+  pushi(500) // knot #5 x
+  pushi(500) // knot #5 y
+  pushi(500) // knot #6 x
+  pushi(500) // knot #6 y
+  pushi(500) // knot #7 x
+  pushi(500) // knot #7 y
+  pushi(500) // knot #8 x
+  pushi(500) // knot #8 y
+  pushi(500) // knot #9 x
+  pushi(500) // knot #9 y
+
+  prints("Positions:\n")
+  push_read while(dupc c_to_b) {
+    if (eqc_('D')) {
+      readc popc read_number
+      while (gti_(0)) {
+        // copy counter far ahead to free local space
+        pushi(-1) addi move_counter
+        prints("D: ")
+        // step
+        rolli19(18) pushi(-1) addi rolli19(1)
+        allFollow
+        // add new position to list
+        dupi2 merge printi endl rolli21(1)
+        // copy back
+        retrieve_counter
+      }
+      popi
+      pushc(0)
+    }
+    if (eqc_('U')) {
+      readc popc read_number
+      while (gti_(0)) {
+        // copy counter far ahead to free local space
+        pushi(-1) addi move_counter
+        prints("U: ")
+        // step
+        rolli19(18) pushi(1) addi rolli19(1)
+        allFollow
+        // add new position to list
+        dupi2 merge printi endl rolli21(1)
+        // copy back
+        retrieve_counter
+      }
+      popi
+      pushc(0)
+    }
+    if (eqc_('L')) {
+      readc popc read_number
+      while (gti_(0)) {
+        // copy counter far ahead to free local space
+        pushi(-1) addi move_counter
+        prints("L: ")
+        // step
+        rolli20(19) pushi(-1) addi rolli20(1)
+        allFollow
+        // add new position to list
+        dupi2 merge printi endl rolli21(1)
+        // copy back
+        retrieve_counter
+      }
+      popi
+      pushc(0)
+    }
+    if (eqc_('R')) {
+      readc popc read_number
+      while (gti_(0)) {
+        // copy counter far ahead to free local space
+        pushi(-1) addi move_counter
+        prints("R: ")
+        // step
+        rolli20(19) pushi(1) addi rolli20(1)
+        allFollow
+        // add new position to list
+        dupi2 merge printi endl rolli21(1)
+        // copy back
+        retrieve_counter
+      }
+      popi
+      pushc(0)
+    }
+    popc
+    push_read
+  }
+  popc
+  popi popi popi popi popi
+  popi popi popi popi popi
+  popi popi popi popi popi
+  popi popi popi popi popi
+  prints("Sorted:\n")
+  sort
+
+  prints("Fold:\n")
+  // count items all the way down
+  pushi(0) rolli3(1)
+  while(not0) { // while we are on a point
+    // are the two next points the same?
+    dupi2 nei
+    if (dupb) {
+      popb
+      printi endl
+      // they are different! increase count by 1
+      popi swapi pushi(1) addi rolli3(1)
+      pushb(true)
+    }
+    if (dupb not) {
+      popb
+      // they are the same: skip it
+      popi swapi rolli3(1)
+      pushb(true)
+    }
+    popb
+  }
+  popi popi printi endl
+}
+
+def impure move_counter() {
+  [->>>>>>>>>>>>>>>>>>>>>>>+<<<<<<<<<<<<<<<<<<<<<<<]<
+  [->>>>>>>>>>>>>>>>>>>>>>>+<<<<<<<<<<<<<<<<<<<<<<<]<
+  [->>>>>>>>>>>>>>>>>>>>>>>+<<<<<<<<<<<<<<<<<<<<<<<]<
+  [->>>>>>>>>>>>>>>>>>>>>>>+<<<<<<<<<<<<<<<<<<<<<<<]<
+}
+
+def impure retrieve_counter() {
+  >>>>>>>>>>>>>>>>>>>
+  > [-<<<<<<<<<<<<<<<<<<<+>>>>>>>>>>>>>>>>>>>]
+  > [-<<<<<<<<<<<<<<<<<<<+>>>>>>>>>>>>>>>>>>>]
+  > [-<<<<<<<<<<<<<<<<<<<+>>>>>>>>>>>>>>>>>>>]
+  > [-<<<<<<<<<<<<<<<<<<<+>>>>>>>>>>>>>>>>>>>]
+  <<<<<<<<<<<<<<<<<<<
+}
+
+def impure merge() {
+  [-<<<<<<+>>>>>>]<
+  [-<<<<<<+>>>>>>]<
+  [-]<
+  [-]<
+}
+
+def impure allFollow() {
+  rolli20(16) follow
+  rolli20(18) follow
+  rolli20(18) follow
+  rolli20(18) follow
+  rolli20(18) follow
+  rolli20(18) follow
+  rolli20(18) follow
+  rolli20(18) follow
+  rolli20(18) follow
+}
+
+def follow() [I,I,I,I,I] -> [I,I,I,I,I] {
+  // [HX,HY,TX,TY]
+  // compute the distance
+  dupi4 swapi
+  rolli3(1) subi abs
+  rolli3(1) subi abs
+  maxi
+  if (gti_(1)) {
+    popi
+    dupi4 swapi
+    rolli3(1) subi signum
+    rolli3(1) subi signum
+    // TX TY DY DX
+    rolli4(3)
+    // TY DY DX TX
+    subi
+    rolli3(1) swapi
+    // TX DY TY
+    subi
+    pushi(0)
+  }
+  popi
+}
+
+def impure sort() {
+  // while there's at least one item left
+  while(not0) {
+    // while we're on an item
+    while(not0) {
+      // sort those two items
+      if (dupi2 lti) { swapi }
+      // move the bigger one far away to free some local buffer
+      move_far
+      // go to next item
+      <<<<
+    }
+    // we've reached the end, copy the lowest element back
+    >>>> move_back
+    // and put it behind the 0, so that it's "out"
+    // swap inlined into a copy for optimization
+    [-<<<<+>>>>]<
+    [-<<<<+>>>>]<
+    [-<<<<+>>>>]<
+    [-<<<<+>>>>]<
+    printi endl
+
+    // copy everything back
+    >>>>>>>> move_back
+    while(not0) {
+      >>>> move_back
+    }
+    <<<<
+  }
+  <<<<
+}
+
+def impure not0() [I] -> [I,B] {
+  dupi
+  [[-]>+<]<
+  [[-]>>+<<]<
+  [[-]>>>+<<<]<
+  [[-]>>>>+<<<<]>>>>
+  [[-]<<<<+>>>>]<<<<
+}
+
+def impure move_far() {
+  [->>>>>>>>>>>>>>>>>>>+<<<<<<<<<<<<<<<<<<<]<
+  [->>>>>>>>>>>>>>>>>>>+<<<<<<<<<<<<<<<<<<<]<
+  [->>>>>>>>>>>>>>>>>>>+<<<<<<<<<<<<<<<<<<<]<
+  [->>>>>>>>>>>>>>>>>>>+<<<<<<<<<<<<<<<<<<<]>>>
+}
+
+def impure move_back() {
+  >>>>>>>>>>>>>>>>>>>
+  [-<<<<<<<<<<<<<<<<<<<+>>>>>>>>>>>>>>>>>>>]<
+  [-<<<<<<<<<<<<<<<<<<<+>>>>>>>>>>>>>>>>>>>]<
+  [-<<<<<<<<<<<<<<<<<<<+>>>>>>>>>>>>>>>>>>>]<
+  [-<<<<<<<<<<<<<<<<<<<+>>>>>>>>>>>>>>>>>>>]>>>
+  <<<<<<<<<<<<<<<<<<<
+}
+
+def abs() [I] -> [I] {
+  if (lti_(0)) { pushi(0) subi }
+}
+
+def signum() [I] -> [I] {
+  if (lti_(0)) { popi pushi(-1) }
+  if (gti_(0)) { popi pushi( 1) }
+}
+
+def impure read_number() [] -> [I] {
+  pushi(0)
+  push_read
+  while(nec_('\n')) {
+    pushc('0')
+    swapc
+    subc
+    c_to_i
+    swapi
+    pushi(10)
+    muli
+    addi
+    push_read
+  }
+  popc
+}
