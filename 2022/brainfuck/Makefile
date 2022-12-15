@@ -1,5 +1,5 @@
 %.out: %.bf
-	bfc $< && mv a.out $@
+	bfc $< -s 10000000 -a 10000000 && mv a.out $@
 
 %.bf: %.bs
 	bfs -O $< > $@
