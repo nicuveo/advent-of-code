@@ -1,0 +1,81 @@
+def impure move_counter() {
+  [->>>>>>>>>>>>>>>>>>>>>>>>+<<<<<<<<<<<<<<<<<<<<<<<<]<
+  [->>>>>>>>>>>>>>>>>>>>>>>>+<<<<<<<<<<<<<<<<<<<<<<<<]<
+  [->>>>>>>>>>>>>>>>>>>>>>>>+<<<<<<<<<<<<<<<<<<<<<<<<]<
+  [->>>>>>>>>>>>>>>>>>>>>>>>+<<<<<<<<<<<<<<<<<<<<<<<<]<
+}
+
+def impure retrieve_counter() {
+  >>>>>>>>>>>>>>>>>>>>>>>>
+  > [-<<<<<<<<<<<<<<<<<<<<<<<<+>>>>>>>>>>>>>>>>>>>>>>>>]
+  > [-<<<<<<<<<<<<<<<<<<<<<<<<+>>>>>>>>>>>>>>>>>>>>>>>>]
+  > [-<<<<<<<<<<<<<<<<<<<<<<<<+>>>>>>>>>>>>>>>>>>>>>>>>]
+  > [-<<<<<<<<<<<<<<<<<<<<<<<<+>>>>>>>>>>>>>>>>>>>>>>>>]
+  <<<<<<<<<<<<<<<<<<<<<<<<
+}
+
+def impure merge() {
+  [-<<<<<<+>>>>>>]<
+  [-<<<<<<+>>>>>>]<
+  [-]<
+  [-]<
+}
+
+def follow() [I,I,I,I,I] -> [I,I,I,I,I,B] {
+  // [HX,HY,TX,TY]
+  // compute the distance
+  dupi4 swapi
+  rolli3(1) subi abs
+  rolli3(1) subi abs
+  maxi pushi(1) lti
+  if (dupb) {
+    popb
+    dupi4 swapi
+    rolli3(1) subi signum
+    rolli3(1) subi signum
+    // TX TY DY DX
+    rolli4(3)
+    // TY DY DX TX
+    subi
+    rolli3(1) swapi
+    // TX DY TY
+    subi
+    pushb(true)
+  }
+  // do not pop the boolean: we want to know if we actually modified the point
+}
+
+def impure not0() [I] -> [I,B] {
+  dupi
+  [[-]>+<]<
+  [[-]>>+<<]<
+  [[-]>>>+<<<]<
+  [[-]>>>>+<<<<]>>>>
+  [[-]<<<<+>>>>]<<<<
+}
+
+def abs() [I] -> [I] {
+  if (lti_(0)) { pushi(0) subi }
+}
+
+def signum() [I] -> [I] {
+  if (lti_(0)) { popi pushi(-1) }
+  if (gti_(0)) { popi pushi( 1) }
+}
+
+def impure read_number() [] -> [I] {
+  pushi(0)
+  push_read
+  while(nec_('\n')) {
+    pushc('0')
+    swapc
+    subc
+    c_to_i
+    swapi
+    pushi(10)
+    muli
+    addi
+    push_read
+  }
+  popc
+}
