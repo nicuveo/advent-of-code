@@ -35,9 +35,7 @@ def impure main() {
         rolli19(18) pushi(-1) addi rolli19(1)
         allFollow
         // add new position to list
-        dupi2 merge printi endl rolli21(1)
-        // copy back
-        retrieve_counter
+        store_point
       }
       popi
       pushc(0)
@@ -52,9 +50,7 @@ def impure main() {
         rolli19(18) pushi(1) addi rolli19(1)
         allFollow
         // add new position to list
-        dupi2 merge printi endl rolli21(1)
-        // copy back
-        retrieve_counter
+        store_point
       }
       popi
       pushc(0)
@@ -69,9 +65,7 @@ def impure main() {
         rolli20(19) pushi(-1) addi rolli20(1)
         allFollow
         // add new position to list
-        dupi2 merge printi endl rolli21(1)
-        // copy back
-        retrieve_counter
+        store_point
       }
       popi
       pushc(0)
@@ -86,9 +80,7 @@ def impure main() {
         rolli20(19) pushi(1) addi rolli20(1)
         allFollow
         // add new position to list
-        dupi2 merge printi endl rolli21(1)
-        // copy back
-        retrieve_counter
+        store_point
       }
       popi
       pushc(0)
@@ -126,6 +118,34 @@ def impure main() {
     popb
   }
   popi popi printi endl
+}
+
+def impure store_point() {
+  dupi2 merge printi
+  rolli22(21)
+  dupi2 eqi
+  if (dupb) {
+    popb
+    popi
+    rolli21(1)
+    >>>>
+    retrieve_counter
+    [-<<<<+>>>>]<
+    [-<<<<+>>>>]<
+    [-<<<<+>>>>]<
+    [-<<<<+>>>>]<
+    pushb(true)
+    prints(" (removed)")
+  }
+  if (dupb not) {
+    popb
+    swapi
+    rolli22(2)
+    retrieve_counter
+    pushb(true)
+  }
+  popb
+  endl
 }
 
 def impure move_counter() {
