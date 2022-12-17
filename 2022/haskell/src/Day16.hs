@@ -6,16 +6,14 @@ module Main where
 import Control.Monad.Loops
 import Control.Monad.State
 import Data.Foldable
-import Data.HashMap.Strict (HashMap, (!), (!?))
+import Data.HashMap.Strict (HashMap, (!))
 import Data.HashMap.Strict qualified as M
 import Data.HashSet        (HashSet)
 import Data.HashSet        qualified as S
 import Data.List           qualified as L
 import Data.Maybe
-import Data.Tuple
 import Text.Parsec
 import Text.Parsec.Char
-import Text.Printf
 
 import AOC
 
@@ -59,9 +57,8 @@ buildDistanceMap edges = flip execState mempty $
   where
     firstEdges :: [(ValveName, ValveName, Int)]
     firstEdges = do
-      (start, ends) <- M.toList edges
-      end <- ends
-      pure (start, end, 1)
+      valve <- M.keys edges
+      pure (valve, valve, 0)
     step
       :: MonadState DistanceMap m
       => (ValveName, ValveName, Int)
@@ -84,7 +81,7 @@ visitValves
   -> HashMap (HashSet ValveName) Int
 visitValves totalTime (flowMap, distanceMap) = L.foldl1' (M.unionWith max) do
   startValve <- M.keys flowMap
-  let startTime = totalTime - fromMaybe 0 (distanceMap !? ("AA", startValve))
+  let startTime = totalTime - (distanceMap ! ("AA", startValve))
   pure $ go 0 startTime startValve (S.singleton startValve)
   where
     go totalFlow timeLeft valve seen =
@@ -94,7 +91,7 @@ visitValves totalTime (flowMap, distanceMap) = L.foldl1' (M.unionWith max) do
           targetValve <- M.keys flowMap
           guard $ not $ targetValve `S.member` seen
           let targetTimeLeft = timeLeft - 1 - (distanceMap ! (valve, targetValve))
-          guard $ targetTimeLeft > 0
+          guard $ targetTimeLeft > 1
           pure $ go updatedFlow targetTimeLeft targetValve (S.insert targetValve seen)
         stopHere = M.singleton seen updatedFlow
       in L.foldl' (M.unionWith max) stopHere nextValves
