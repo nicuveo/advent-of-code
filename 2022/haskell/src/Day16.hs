@@ -8,10 +8,10 @@ import Control.Monad.State
 import Data.Foldable
 import Data.HashMap.Strict (HashMap, (!))
 import Data.HashMap.Strict qualified as M
-import Data.HashSet        qualified as HS
+import Data.HashSet        (HashSet)
+import Data.HashSet        qualified as S
 import Data.List           qualified as L
 import Data.Maybe
-import Data.Set            qualified as S
 import Data.Tuple
 import Text.Parsec
 import Text.Parsec.Char
@@ -79,55 +79,38 @@ buildDistanceMap edges = flip execState mempty $
 -- solution
 
 visitValves
-  :: Input
-  -> [(ValveName, Int)]
-  -> [(String, Int)]
-visitValves (flowMap, distanceMap) start = go
-  (  S.fromList $ swap <$> start
-  , HS.fromList $ fst  <$> start
-  )
+  :: Int
+  -> Input
+  -> HashMap (HashSet ValveName) Int
+visitValves totalTime (flowMap, distanceMap) = L.foldl1' (M.unionWith max) do
+  startValve <- M.keys flowMap
+  let startTime = totalTime - fromMaybe 0 (distanceMap M.!? ("AA", startValve))
+  pure $ go 0 startTime startValve (S.singleton startValve)
   where
-    go (targets, seen)
-      | S.null targets = []
-      | otherwise =
-        let
-          ((timeLeft, valve), remainingTargets) = S.deleteFindMax targets
-          baseResult = (flowMap ! valve) * (timeLeft - 1)
-          subBranches = do
-            targetValve <- M.keys flowMap
-            guard $ not $ targetValve `HS.member` seen
-            let distance = fromJust $ M.lookup (valve, targetValve) distanceMap
-                targetTimeLeft = timeLeft - 1 - distance
-            guard $ targetTimeLeft > 0
-            pure
-              ( S.insert (targetTimeLeft, targetValve) remainingTargets
-              , HS.insert targetValve seen
-              )
-          nextSteps = if null subBranches
-            then [(remainingTargets, seen)]
-            else subBranches
-          subResults = concatMap go nextSteps
-        in if null subResults
-           then [(valve, baseResult)]
-           else do
-             (path, cost) <- subResults
-             pure ( valve ++ " -> " ++ path
-                  , cost + baseResult
-                  )
+    go totalFlow timeLeft valve seen =
+      let
+        updatedFlow = totalFlow +  (flowMap ! valve) * (timeLeft - 1)
+        nextValves = do
+          targetValve <- M.keys flowMap
+          guard $ not $ targetValve `S.member` seen
+          let distance = fromJust $ M.lookup (valve, targetValve) distanceMap
+              targetTimeLeft = timeLeft - 1 - distance
+          guard $ targetTimeLeft > 0
+          pure $ go updatedFlow targetTimeLeft targetValve (S.insert targetValve seen)
+        stopHere = M.singleton seen updatedFlow
+      in L.foldl' (M.unionWith max) stopHere nextValves
 
 part1 :: Input -> Int
-part1 input@(flowMap, distanceMap) = maximum $ map snd do
-  valve <- M.keys flowMap
-  let timeLeft = 30 - fromMaybe 0 (distanceMap M.!? ("AA", valve))
-  visitValves input [(valve, timeLeft)]
+part1 = maximum . visitValves 30
 
 part2 :: Input -> Int
-part2 input@(flowMap, distanceMap) = maximum $ map snd do
-  (valve1 : others) <- L.tails $ M.keys flowMap
-  valve2 <- others
-  let timeLeft1 = 26 - fromMaybe 0 (distanceMap M.!? ("AA", valve1))
-      timeLeft2 = 26 - fromMaybe 0 (distanceMap M.!? ("AA", valve2))
-  visitValves input [(valve1, timeLeft1), (valve2, timeLeft2)]
+part2 = maximum . bestCombo . visitValves 26
+  where
+    bestCombo (M.toList -> paths) = do
+      (seen1, flow1) : rest <- L.tails paths
+      (seen2, flow2) <- rest
+      guard $ S.null $ S.intersection seen1 seen2
+      pure $ flow1 + flow2
 
 
 -- main
