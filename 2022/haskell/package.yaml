@@ -123,8 +123,8 @@ executables:
   # day13: {<<: *exe, main: src/Day13.hs}
   # day14: {<<: *exe, main: src/Day14.hs}
   # day15: {<<: *exe, main: src/Day15.hs}
-  day16: {<<: *exe, main: src/Day16.hs}
-  # day17: {<<: *exe, main: src/Day17.hs}
+  # day16: {<<: *exe, main: src/Day16.hs}
+  day17: {<<: *exe, main: src/Day17.hs}
   # day18: {<<: *exe, main: src/Day18.hs}
   # day19: {<<: *exe, main: src/Day19.hs}
   # day20: {<<: *exe, main: src/Day20.hs}
