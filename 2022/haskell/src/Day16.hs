@@ -12,6 +12,7 @@ import Data.HashSet        qualified as HS
 import Data.List           qualified as L
 import Data.Maybe
 import Data.Set            qualified as S
+import Data.Tuple
 import Text.Parsec
 import Text.Parsec.Char
 import Text.Printf
@@ -45,6 +46,7 @@ parseInput = postProcess . parseLinesWith do
     postProcess valves =
       let flowMap = M.fromList do
             (valve, flow, _) <- valves
+            guard $ flow > 0
             pure (valve, flow)
           distanceMap = buildDistanceMap $ M.fromList do
             (valve, _, neighbours) <- valves
@@ -76,71 +78,35 @@ buildDistanceMap edges = flip execState mempty $
 
 -- solution
 
-part1 :: Input -> Int
-part1 (flowMap, distanceMap) = maximum do
-  valve <- M.keys flowMap
-  guard $ flowMap M.! valve > 0
-  maybeToList $ go
-    mempty
-    valve
-    (30 - fromMaybe 0 (distanceMap M.!? ("AA", valve)))
+visitValves
+  :: Input
+  -> [(ValveName, Int)]
+  -> [(String, Int)]
+visitValves (flowMap, distanceMap) start = go
+  (  S.fromList $ swap <$> start
+  , HS.fromList $ fst  <$> start
+  )
   where
-    go seen valve !timeLeft
-      | valve `S.member` seen = Nothing
-      | timeLeft <= 0 = Nothing
-      | otherwise =
-        let baseResult = (flowMap ! valve) * (timeLeft - 1)
-            nextSteps = do
-              nextValve <- M.keys flowMap
-              guard $ flowMap M.! nextValve > 0
-              let distance =
-                    fromMaybe
-                    (error $ printf "no path found between %s and %s" valve nextValve)
-                    (M.lookup (valve, nextValve) distanceMap)
-              maybeToList $ go
-                (S.insert valve seen)
-                nextValve
-                (timeLeft - 1 - distance)
-         in Just $ if null nextSteps
-                   then baseResult
-                   else baseResult + maximum nextSteps
-
-part2 :: Input -> Int
-part2 (flowMap, distanceMap) = maximum do
-  (valve1 : others) <- L.tails $ M.keys flowMap
-  guard $ flowMap M.! valve1 > 0
-  valve2 <- others
-  guard $ flowMap M.! valve2 > 0
-  let time1 = 26 - fromMaybe 0 (distanceMap M.!? ("AA", valve1))
-      time2 = 26 - fromMaybe 0 (distanceMap M.!? ("AA", valve2))
-      seen = HS.fromList [valve1, valve2]
-      targets = S.fromList [(time1, valve1), (time2, valve2)]
-  (_, cost) <- step targets seen
-  pure cost
-  where
-    step targets seen
+    go (targets, seen)
       | S.null targets = []
       | otherwise =
-        let ((nextTime, nextValve), nextTargets) = S.deleteFindMax targets
-        in go nextTargets seen nextTime nextValve
-    go targets seen timeLeft valve
-      | timeLeft <= 0 = []
-      | otherwise =
-        let baseResult = (flowMap ! valve) * (timeLeft - 1)
-            subBranches = do
-              targetValve <- M.keys flowMap
-              guard $ flowMap M.! targetValve > 0
-              guard $ not $ targetValve `HS.member` seen
-              let distance = fromJust $ M.lookup (valve, targetValve) distanceMap
-                  targetTimeLeft = timeLeft - 1 - distance
-              pure
-                ( S.insert (targetTimeLeft, targetValve) targets
-                , HS.insert targetValve seen
-                )
-            nextSteps = if null subBranches
-              then [(targets, seen)]
-              else subBranches
-            subResults = concatMap (uncurry step) nextSteps
+        let
+          ((timeLeft, valve), remainingTargets) = S.deleteFindMax targets
+          baseResult = (flowMap ! valve) * (timeLeft - 1)
+          subBranches = do
+            targetValve <- M.keys flowMap
+            guard $ not $ targetValve `HS.member` seen
+            let distance = fromJust $ M.lookup (valve, targetValve) distanceMap
+                targetTimeLeft = timeLeft - 1 - distance
+            guard $ targetTimeLeft > 0
+            pure
+              ( S.insert (targetTimeLeft, targetValve) remainingTargets
+              , HS.insert targetValve seen
+              )
+          nextSteps = if null subBranches
+            then [(remainingTargets, seen)]
+            else subBranches
+          subResults = concatMap go nextSteps
         in if null subResults
            then [(valve, baseResult)]
            else do
@@ -149,27 +115,20 @@ part2 (flowMap, distanceMap) = maximum do
                   , cost + baseResult
                   )
 
-{-
-    go seen valve !timeLeft
-      | valve `S.member` seen = []
-      | timeLeft <= 0 = []
-      | otherwise =
-        let baseResult = (flowMap ! valve) * (timeLeft - 1)
-            nextSteps = do
-              nextValve <- M.keys flowMap
-              guard $ flowMap M.! nextValve > 0
-              let distance =
-                    fromMaybe
-                    (error $ printf "no path found between %s and %s" valve nextValve)
-                    (M.lookup (valve, nextValve) distanceMap)
-              go
-                (S.insert valve seen)
-                nextValve
-                (timeLeft - 1 - distance)
-         in ([valve], baseResult) : do
-              (path, cost) <- nextSteps
-              pure ([valve] ++ path, cost + baseResult)
--}
+part1 :: Input -> Int
+part1 input@(flowMap, distanceMap) = maximum $ map snd do
+  valve <- M.keys flowMap
+  let timeLeft = 30 - fromMaybe 0 (distanceMap M.!? ("AA", valve))
+  visitValves input [(valve, timeLeft)]
+
+part2 :: Input -> Int
+part2 input@(flowMap, distanceMap) = maximum $ map snd do
+  (valve1 : others) <- L.tails $ M.keys flowMap
+  valve2 <- others
+  let timeLeft1 = 26 - fromMaybe 0 (distanceMap M.!? ("AA", valve1))
+      timeLeft2 = 26 - fromMaybe 0 (distanceMap M.!? ("AA", valve2))
+  visitValves input [(valve1, timeLeft1), (valve2, timeLeft2)]
+
 
 -- main
 
@@ -178,10 +137,8 @@ main = aocMain 16 $ \rawData -> do
   let testInput = parseInput example
       realInput = parseInput rawData
   putStrLn "# Part 1"
-  -- for_ (L.sortOn snd $ part1 testInput) \(path, cost) -> do
-  --   printf "%4d %s\n" cost $ L.intercalate ", " path
-  -- print $ part1 testInput
-  -- print $ part1 realInput
+  print $ part1 testInput
+  print $ part1 realInput
   putStrLn "# Part 2"
   print $ part2 testInput
   print $ part2 realInput
