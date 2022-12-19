@@ -117,7 +117,7 @@ maxGeodes totalTime bp = flip evalState 0 $ go totalTime (M.insert Ore 1 none) n
           justWait = timeLeft * robots ! Geode + bag ! Geode
       bestSoFar <- get
       let prediction = robots ! Geode * timeLeft + bag ! Geode + triangular (timeLeft - 1)
-      if bestSoFar > prediction
+      if bestSoFar >= prediction
       then pure 0
       else do
         paths <- for delays \(target, cost, delay) -> do
