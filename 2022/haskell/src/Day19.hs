@@ -106,9 +106,7 @@ maxGeodes totalTime bp = flip evalState 0 $ go totalTime (M.insert Ore 1 none) n
             waitTimes <- flip M.traverseWithKey cost \resource amountNeeded ->
               case robots ! resource of
                 0 -> Nothing
-                r -> Just $ case divMod (max 0 $ amountNeeded - bag ! resource) r of
-                  (turns, 0) -> turns
-                  (turns, _) -> turns+1
+                r -> Just $ div (max 0 (amountNeeded - bag ! resource) + r - 1) r
             let delay = maximum waitTimes + 1
             guard $ timeLeft > delay
             when (target /= Geode) $
@@ -116,8 +114,8 @@ maxGeodes totalTime bp = flip evalState 0 $ go totalTime (M.insert Ore 1 none) n
             pure (target, cost, delay)
           justWait = timeLeft * robots ! Geode + bag ! Geode
       bestSoFar <- get
-      let prediction = robots ! Geode * timeLeft + bag ! Geode + triangular (timeLeft - 1)
-      if bestSoFar >= prediction
+      let upperBound = justWait + triangular (timeLeft - 1)
+      if bestSoFar >= upperBound
       then pure 0
       else do
         paths <- for delays \(target, cost, delay) -> do
