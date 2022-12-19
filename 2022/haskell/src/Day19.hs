@@ -96,8 +96,9 @@ maxRobots :: Blueprint -> HashMap Resource Int
 maxRobots = L.foldl1' (M.unionWith max) . M.elems
 
 maxGeodes :: Int -> Blueprint -> Int
-maxGeodes totalTime bp = flip evalState mempty $ go totalTime (M.insert Ore 1 none) none
+maxGeodes totalTime bp = flip evalState 0 $ go totalTime (M.insert Ore 1 none) none
   where
+    triangular n = div (n * (n+1)) 2
     maxNeeded = maxRobots bp
     recipes = M.toList bp
     go timeLeft robots bag = do
@@ -114,17 +115,19 @@ maxGeodes totalTime bp = flip evalState mempty $ go totalTime (M.insert Ore 1 no
               guard $ (maxNeeded ! target - robots ! target) * timeLeft > bag ! target
             pure (target, cost, delay)
           justWait = timeLeft * robots ! Geode + bag ! Geode
-      bestSoFar <- gets $ M.findWithDefault 0 robots
-      if bestSoFar > timeLeft
+      bestSoFar <- get
+      let prediction = robots ! Geode * timeLeft + bag ! Geode + triangular (timeLeft - 1)
+      if bestSoFar > prediction
       then pure 0
       else do
-        modify $ M.insert robots timeLeft
         paths <- for delays \(target, cost, delay) -> do
           go
             (timeLeft - delay)
             (M.insertWith (+) target 1 robots)
             (pay (collect bag $ fmap (delay*) robots) cost)
-        pure $ maximum $ justWait : paths
+        let r = maximum $ justWait : paths
+        modify $ max r
+        pure r
 
 
 -- solution
