@@ -90,25 +90,37 @@ instance Hashable Dice where
   hashWithSalt x = hashWithSalt x . fromEnum
 
 findDiceSides :: Set Int -> HashMap (Int, Direction) (Int, Direction)
-findDiceSides gs = postProcess $ flip execState mempty $ go (S.findMin gs) DBack N DTop
+findDiceSides knownGroups =
+  postProcess $ flip execState mempty $ go (S.findMin knownGroups) DBack N DTop
   where
     go group from edge side = do
       seen <- isJust <$> gets (M.lookup group)
       unless seen do
-        let es = getEdges from edge side
-        modify $ M.insert group (side, es)
+        -- for each side we haven't encountered yet
+        -- get all of the edges, and create a temporary hashmap
+        -- for each group, what side it is, and which side is in which direction
+        let edges = getEdges from edge side
+        modify $ M.insert group (side, edges)
+        -- then visit all directly adjacent neighbours
         sequence_ do
-          (ng, d, f) <- zip3
+          (neighbourGroup, goingTo, arrivingFrom) <- zip3
             [group - 1,  group - 10, group + 1,  group + 10]
             [        W,           N,         E,           S]
             [        E,           S,         W,           N]
-          guard $ ng `S.member` gs
-          pure $ go ng side f (es ! d)
+          guard $ neighbourGroup `S.member` knownGroups
+          pure $ go neighbourGroup side arrivingFrom (edges ! goingTo)
+    -- post-processing finishes the job, by associating group number to group
+    -- number in each direction
     postProcess mappings = M.fromList do
+      -- for each group and its edges
       (groupF, (sideF, edgesF)) <- M.toList mappings
+      -- for each edge
       (dirT, sT) <- M.toList edgesF
+      -- for each six group
       (groupT, (sideT, edgesT)) <- M.toList mappings
+      -- keep the one group that corresponds to our target side
       guard $ sT == sideT
+      -- find the correct edge
       (dirF, sF) <- M.toList edgesT
       guard $ sF == sideF
       pure ((groupF, dirT), (groupT, dirF))
