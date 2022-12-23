@@ -39,23 +39,30 @@ instance Num Point where
 
 -- cardinal coordinates
 
-data Direction = N | NE | E | SE | S | SW | W | NW deriving
-    ( Bounded
-    , Enum
-    , Eq
-    , Show
-    )
+data Direction
+  = N
+  | NE
+  | E
+  | SE
+  | S
+  | SW
+  | W
+  | NW
+  deriving (Bounded, Enum, Eq, Show)
+
+instance Hashable Direction where
+  hashWithSalt x = hashWithSalt x . fromEnum
 
 directionVector :: Direction -> Vector
 directionVector = \case
-  N  -> Point u 0
-  NE -> Point u r
-  E  -> Point 0 r
-  SE -> Point d r
-  S  -> Point d 0
-  SW -> Point d l
-  W  -> Point 0 l
-  NW -> Point u l
+  N  -> Point 0 u
+  NE -> Point r u
+  E  -> Point r 0
+  SE -> Point r d
+  S  -> Point 0 d
+  SW -> Point l d
+  W  -> Point l 0
+  NW -> Point l u
   where
     u = -1
     d =  1
