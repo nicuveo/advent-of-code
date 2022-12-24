@@ -137,7 +137,7 @@ fourSurroundingPoints :: Point -> [Point]
 fourSurroundingPoints p = [above p, rightOf p, below p, leftOf p]
 
 eightSurroundingPoints :: Point -> [Point]
-eightSurroundingPoints (Point y x) =
+eightSurroundingPoints (Point x y) =
   [ Point (x-1) (y-1) , Point x (y-1) , Point (x+1) (y-1)
   , Point (x-1)  y    ,                 Point (x+1)  y
   , Point (x-1) (y+1) , Point x (y+1) , Point (x+1) (y+1)
