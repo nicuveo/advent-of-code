@@ -14,12 +14,13 @@ toSNAFU :: Int -> String
 toSNAFU = reverse . go
   where
     go 0 = []
-    go n =
-      let (x,y) = n `divMod` 5
-          (d,c) = if y <= 2
-                  then (x,   intToDigit y)
-                  else (x+1, if y == 3 then '=' else '-')
-       in c : go d
+    go n = case n `divMod` 5 of
+      (x, 0) -> '0' : go x
+      (x, 1) -> '1' : go x
+      (x, 2) -> '2' : go x
+      (x, 3) -> '=' : go (x+1)
+      (x, 4) -> '-' : go (x+1)
+      _      -> error "impossible"
 
 fromSNAFU :: String -> Int
 fromSNAFU = sum . zipWith combine [0..] . map toDigit . reverse
