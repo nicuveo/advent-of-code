@@ -1,0 +1,55 @@
+def impure main() {
+  >>>>>>>>>>>>
+  readc
+  while (nec_(0)) {
+    while (nec_('\n')) {
+      if (eqc_('0')) {
+        [-]>>>>
+      }
+      if (eqc_('1')) {
+        [-]>>>+>
+      }
+      if (eqc_('2')) {
+        [-]>>>++>
+      }
+      if (eqc_('-')) {
+        [-]->->->->
+      }
+      if (eqc_('=')) {
+        [-]->->->-->
+      }
+      < swapi pushi(5) muli addi >
+      readc
+    }
+    popc
+    addi
+    >>>>>
+    readc
+  }
+  #
+  <<<<<
+  while (gti_(0)) {
+    #
+    pushi(5) swapi divmodi
+    if (eqi_(0)) {
+       popi pushc('0')
+    }
+    if (eqi_(1)) {
+      popi pushc('1')
+    }
+    if (eqi_(2)) {
+      popi pushc('2')
+    }
+    if (eqi_(3)) {
+      --  addi pushc('=')
+    }
+    if (eqi_(4)) {
+      --- addi pushc('-')
+    }
+    rollc5(1)
+  }
+  <<<<[
+    .<
+  ]
+  endl
+}
