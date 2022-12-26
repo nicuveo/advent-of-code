@@ -1,20 +1,16 @@
-def impure i_to_i64() {
-  >>>> rollc8(4)
-}
-
-def impure pushi64(I i) {
+def impure pushi64(I i) [] -> [I,I] {
   pushi(0) pushi(i)
 }
 
-def impure popi64() {
+def impure popi64() [I,I] -> [] {
   popi popi
 }
 
-def impure swapi64() {
+def impure swapi64() [I,I,I,I] -> [I,I,I,I] {
   rollc16(8)
 }
 
-def impure addi64() {
+def impure addi64() [I,I,I,I] -> [I,I] {
   <<<<<<<<[->>>>>>>>>>+                        <<<<<<<<<<]>>>>>>>>[->>+ dupc not [-<<+>>] popc <<]>>[-<<<<<<<<<<+>>>>>>>>>>]<<<
   <<<<<<<<[->>>>>>>>>>+ dupc not [-<<+>>] popc <<<<<<<<<<]>>>>>>>>[->>+ dupc not [-<<+>>] popc <<]>>[-<<<<<<<<<<+>>>>>>>>>>]<<<
   <<<<<<<<[->>>>>>>>>>+ dupc not [-<<+>>] popc <<<<<<<<<<]>>>>>>>>[->>+ dupc not [-<<+>>] popc <<]>>[-<<<<<<<<<<+>>>>>>>>>>]<<<
@@ -26,7 +22,7 @@ def impure addi64() {
 }
 
 
-def impure subi64() {
+def impure subi64() [I,I,I,I] -> [I,I] {
   [->>+                        <<]<<<<<<<<[->>>>>>>>>> dupc not [-<<+>>] popc -<<<<<<<<<<]>>>>>>>>>>[-<<<<<<<<<<+>>>>>>>>>>] <[>+<-]>[-<-<+>>] <<<
   [->>+ dupc not [-<<->>] popc <<]<<<<<<<<[->>>>>>>>>> dupc not [-<<+>>] popc -<<<<<<<<<<]>>>>>>>>>>[-<<<<<<<<<<+>>>>>>>>>>] <[>+<-]>[-<-<+>>] <<<
   [->>+ dupc not [-<<->>] popc <<]<<<<<<<<[->>>>>>>>>> dupc not [-<<+>>] popc -<<<<<<<<<<]>>>>>>>>>>[-<<<<<<<<<<+>>>>>>>>>>] <[>+<-]>[-<-<+>>] <<<
@@ -37,6 +33,27 @@ def impure subi64() {
   [->>+ dupc not [-<<->>] popc <<]<<<<<<<<[->>>>>>>>>>                        -<<<<<<<<<<]>>>>>>>>>>[-<<<<<<<<<<+>>>>>>>>>>] <[-]               <<
 }
 
+def muli64() [I,I,I,I] -> [I,I] {
+  pushi64(0)  // [c,i,r]
+  rolli6(4)   // [i,r,c]
+  while(nei64_(0)) {
+    rolli6(4) // [r,c,i]
+    dupi2     // [r,c,i,i]
+    rolli8(6) // [c,i,i,r]
+    addi64    // [c,i,r]
+    rolli6(4) // [i,r,c]
+    pushi64(1)
+    swapi64
+    subi64
+  }
+  rolli6(4)
+  popi
+  popi
+  popi
+  popi
+}
+
+
 def impure eqi64_(I i) [] -> [B] {
   dupi2 pushi64(i) eqi64
 }
@@ -45,7 +62,11 @@ def impure gti64_(I i) [] -> [B] {
   dupi2 pushi64(i) swapi64 gti64
 }
 
-def impure eqi64() {
+def impure nei64_(I x) [] -> [B] {
+  dupi2 pushi64(x) nei64
+}
+
+def impure eqi64() [I,I,I,I] -> [B] {
   subi64
   [[-]>+<]<
   [[-]>>+<<]<
@@ -58,11 +79,25 @@ def impure eqi64() {
   >>>>>>>>[[-]<<<<<<<<->>>>>>>>]<<<<<<<<
 }
 
-def impure gti64() {
+def impure nei64() [I,I,I,I] -> [B] {
+  subi64
+  [[-]>+<]<
+  [[-]>>+<<]<
+  [[-]>>>+<<<]<
+  [[-]>>>>+<<<<]<
+  [[-]>>>>>+<<<<<]<
+  [[-]>>>>>>+<<<<<<]<
+  [[-]>>>>>>>+<<<<<<<]<
+  [[-]>>>>>>>>+<<<<<<<<]
+  >>>>>>>>[[-]<<<<<<<<+>>>>>>>>]<<<<<<<<
+}
+
+
+def impure gti64() [I,I,I,I] -> [B] {
   swapi64 lti64
 }
 
-def impure lti64() {
+def impure lti64() [I,I,I,I] -> [B] {
   subi64 popc popc popc popc popc popc popc pushc(128) lec
 }
 
@@ -70,49 +105,82 @@ def impure gei64() [I,I,I,I] -> [B] {
   lti64 not
 }
 
-def impure divmodi64() {
-  pushi64(0) rolli6(2)
-  while (dupi4 gei64) {
-    dupi4 subi64 swapi64 popi64
-    rolli6(4) pushi64(1) addi64 rolli6(2)
+def impure lei64() [I,I,I,I] -> [B] {
+  gti64 not
+}
+
+def impure divmodi64by5() {
+  pushi64(0) rolli4(2)
+  while (dupi2 pushi64(500000000) lei64) {
+    pushi64(500000000) swapi64 subi64
+    swapi64 pushi64(100000000) addi64 swapi64
   }
-  swapi64 popi64
+  while (dupi2 pushi64(50000000) lei64) {
+    pushi64(50000000) swapi64 subi64
+    swapi64 pushi64(10000000) addi64 swapi64
+  }
+  while (dupi2 pushi64(5000000) lei64) {
+    pushi64(5000000) swapi64 subi64
+    swapi64 pushi64(1000000) addi64 swapi64
+  }
+  while (dupi2 pushi64(500000) lei64) {
+    pushi64(500000) swapi64 subi64
+    swapi64 pushi64(100000) addi64 swapi64
+  }
+  while (dupi2 pushi64(50000) lei64) {
+    pushi64(50000) swapi64 subi64
+    swapi64 pushi64(10000) addi64 swapi64
+  }
+  while (dupi2 pushi64(5000) lei64) {
+    pushi64(5000) swapi64 subi64
+    swapi64 pushi64(1000) addi64 swapi64
+  }
+  while (dupi2 pushi64(500) lei64) {
+    pushi64(500) swapi64 subi64
+    swapi64 pushi64(100) addi64 swapi64
+  }
+  while (dupi2 pushi64(50) lei64) {
+    pushi64(50) swapi64 subi64
+    swapi64 pushi64(10) addi64 swapi64
+  }
+  while (dupi2 pushi64(5) lei64) {
+    pushi64(5) swapi64 subi64
+    swapi64 pushi64(1) addi64 swapi64
+  }
 }
 
 
 def impure main() {
-  >>>>>>>>>>>>>>>>
+  >>>>>>>>>>>>>>>>>>>>
   readc
   while (nec_(0)) {
     while (nec_('\n')) {
       if (eqc_('0')) {
-        [-]>>>>
+        [-]>>>>>>>>
       }
       if (eqc_('1')) {
-        [-]>>>+>
+        [-]>>>>>>>+>
       }
       if (eqc_('2')) {
-        [-]>>>++>
+        [-]>>>>>>>++>
       }
       if (eqc_('-')) {
-        [-]->->->->
+        [-]->->->->->->->->
       }
       if (eqc_('=')) {
-        [-]->->->-->
+        [-]->->->->->->->-->
       }
-      < swapi pushi(5) swapi muli addi >
+      < swapi64 pushi64(5) swapi64 muli64 addi64 >
       readc
     }
     popc
-    printi endl
-    i_to_i64
     addi64
-    >>>>>
+    >>>>>>>>>
     readc
   }
-  <<<<<
+  <<<<<<<<<
   while (gti64_(0)) {
-    pushi64(5) swapi64 divmodi64
+    divmodi64by5
     if (eqc_(0)) {
        popi64 pushc('0')
     }
