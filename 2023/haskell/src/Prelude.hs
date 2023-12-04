@@ -25,7 +25,7 @@ import Data.List                  as P (find, findIndex, foldl', group,
                                         unionBy, (\\))
 import Data.List.NonEmpty         as P (NonEmpty (..), nonEmpty)
 import Data.Maybe                 as P (catMaybes, fromMaybe, isJust, isNothing,
-                                        listToMaybe, maybeToList)
+                                        listToMaybe, mapMaybe, maybeToList)
 import Data.Ord                   as P (comparing)
 import Data.Semigroup             as P (Semigroup (..))
 import Data.Sequence              as P (Seq)
