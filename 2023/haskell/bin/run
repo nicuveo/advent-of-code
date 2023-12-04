@@ -1,0 +1,12 @@
+#! /usr/bin/env bash
+
+set -e
+
+day="$1"; shift
+if test -n "$GHCOPTS"; then
+   opts="--ghc-options $GHCOPTS"
+fi
+
+stack build $opts aoc:aoc
+ulimit -v 6000000
+stack exec aoc -- "../input" "$day" "$@"
