@@ -1,0 +1,35 @@
+def is_digit() [C] -> [C, B] {
+  lec_(9)
+}
+
+def to_num() [C,C] -> [I] {
+  swapc
+  pushc(10)
+  mulc
+  addc
+  c_to_i
+}
+
+def impure main() {
+  pushi(0)
+  >>,[
+    while (nec_('\n')) {
+      dec('0')
+      is_digit not
+      [[-]<[-]]
+      ,
+    }
+    [-]< dupc dupc >+ [
+      popc
+      < clear >[-<+>]<
+      <<[->>>+>+<<<<]>>>>[-<<<<+>>>>]<
+    ]<
+    #
+    rollc3(2) <
+    #
+    to_num
+    addi
+    #
+  >>,]
+  << printi endl
+}
