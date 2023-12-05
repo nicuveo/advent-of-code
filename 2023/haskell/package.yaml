@@ -105,14 +105,14 @@ executables:
     main: Main.hs
   }
 
-  animation_test: {
-    <<: *exe,
-    other-modules: [],
-    main: app/AnimationTest.hs
-  }
-
-  pf_test: {
-    <<: *exe,
-    other-modules: [],
-    main: app/PathFindingTest.hs
-  }
+  # animation_test: {
+  #   <<: *exe,
+  #   other-modules: [],
+  #   main: app/AnimationTest.hs
+  # }
+  #
+  # pf_test: {
+  #   <<: *exe,
+  #   other-modules: [],
+  #   main: app/PathFindingTest.hs
+  # }
