@@ -7,31 +7,34 @@ import AOC
 import "this" Prelude
 
 import Text.Parsec
-import Text.Parsec.Char
 
 
 -- input
 
-type Input = String
+type Input = [[Int]]
 
 parseInput :: String -> Input
-parseInput = parseLinesWith line
-  where line = undefined
+parseInput = parseLinesWith $ many1 number
 
 
 -- solution
 
+predictNext :: [Int] -> Int
+predictNext xs
+  | all (== 0) xs = 0
+  | otherwise     = last xs + predictNext (zipWith (-) (tail xs) xs)
+
 part1 :: Input -> Int
-part1 = undefined
+part1 = sum . map predictNext
 
 part2 :: Input -> Int
-part2 = undefined
+part2 = sum . map (predictNext . reverse)
 
 
 -- main
 
 example :: String
-example = ""
+example = "0 3 6 9 12 15\n1 3 6 10 15 21\n10 13 16 21 30 45"
 
 main :: String -> IO ()
 main rawData = do
