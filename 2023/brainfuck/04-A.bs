@@ -1,0 +1,154 @@
+def is_digit() [C] -> [C,B] {
+  dec('0')
+  lec_(9)
+}
+
+def read_number() [] -> [I] {
+  pushi(0)
+  push_read
+  while (is_digit not) {
+    readc
+  }
+  inc('0')
+  while (is_digit) {
+    c_to_i
+    swapi
+    pushi(10)
+    muli
+    addi
+    push_read
+  }
+  popc
+}
+
+def handle_number() [I,I,I,I,I,I,I,I,I,I,I] -> [I,I,I,I,I,I,I,I,I,I,I] {
+  read_number
+  if (dupi2 eqi) { popi pushi(0) }
+  if (dupi i_to_b) {
+    swapi
+    rolli11(1)
+    if (dupi2 eqi) { popi pushi(0) }
+    if (dupi i_to_b) {
+      swapi
+      rolli11(1)
+      if (dupi2 eqi) { popi pushi(0) }
+      if (dupi i_to_b) {
+        swapi
+        rolli11(1)
+        if (dupi2 eqi) { popi pushi(0) }
+        if (dupi i_to_b) {
+          swapi
+          rolli11(1)
+          if (dupi2 eqi) { popi pushi(0) }
+          if (dupi i_to_b) {
+            swapi
+            rolli11(1)
+            if (dupi2 eqi) { popi pushi(0) }
+            if (dupi i_to_b) {
+              swapi
+              rolli11(1)
+              if (dupi2 eqi) { popi pushi(0) }
+              if (dupi i_to_b) {
+                swapi
+                rolli11(1)
+                if (dupi2 eqi) { popi pushi(0) }
+                if (dupi i_to_b) {
+                  swapi
+                  rolli11(1)
+                  if (dupi2 eqi) { popi pushi(0) }
+                  if (dupi i_to_b) {
+                    swapi
+                    rolli11(1)
+                    if (dupi2 eqi) { popi pushi(0) }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  rolli12(11)
+  swapi
+  if (dupi i_to_b not) {
+    popi
+    if (dupi i_to_b) {
+      pushi(2)
+      muli
+      pushi(1)
+      swapi
+      subi
+    }
+    pushi(1)
+    addi
+    pushi(0)
+  }
+  popi
+  rolli11(1)
+}
+
+def process_line() [I] -> [I] {
+  pushi(0)
+  read_number
+  read_number
+  read_number
+  read_number
+  read_number
+  read_number
+  read_number
+  read_number
+  read_number
+  read_number
+
+  handle_number
+  handle_number
+  handle_number
+  handle_number
+  handle_number
+  handle_number
+  handle_number
+  handle_number
+  handle_number
+  handle_number
+  handle_number
+  handle_number
+  handle_number
+  handle_number
+  handle_number
+  handle_number
+  handle_number
+  handle_number
+  handle_number
+  handle_number
+  handle_number
+  handle_number
+  handle_number
+  handle_number
+  handle_number
+
+  popi
+  popi
+  popi
+  popi
+  popi
+  popi
+  popi
+  popi
+  popi
+  popi
+  addi
+}
+
+def impure main() {
+  pushi(0)
+  push_read [
+    while (nec_(':')) {
+      readc
+    }
+    popc
+    process_line
+  push_read ]
+  popc
+  printi endl
+}
