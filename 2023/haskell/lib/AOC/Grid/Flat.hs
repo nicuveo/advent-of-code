@@ -65,6 +65,9 @@ allPoints g = Point <$> xRange g <*> yRange g
 
 -- update
 
+updateAt :: Point -> a -> Grid a -> Grid a
+updateAt p x g@(Grid v w h) = Grid (v V.// [(toIndex g p, x)]) w h
+
 updateWith :: (V.Vector a -> V.Vector b) -> Grid a -> Grid b
 updateWith f m@(Grid v _ _) = m { gData = assert (V.length v == V.length w) w }
   where w = f v
