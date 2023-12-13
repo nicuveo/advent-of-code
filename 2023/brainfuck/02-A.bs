@@ -1,0 +1,83 @@
+def is_digit() [C] -> [C,B] {
+  dec('0')
+  ltc_(10)
+}
+
+def impure not_digit_or_eol() [C] -> [C,B] {
+  eqc_(0)
+  swapc
+  eqc_('\n')
+  rollc3(1)
+  dupc
+  dec('0')
+  pushc(10)
+  gtc
+  rollc4(2)
+  or
+  or
+  not
+}
+
+def read_number() [] -> [C] {
+  pushc(0)
+  push_read
+  while (not_digit_or_eol) {
+    readc
+  }
+  while (is_digit) {
+    swapc
+    pushc(10)
+    mulc
+    addc
+    push_read
+  }
+  popc
+}
+
+def read_color() [] -> [C] {
+  push_read
+  while (eqc_(' ')) {
+    readc
+  }
+  pushc(3)
+  swapc
+  modc
+  inc(12)
+}
+
+def impure process_line() [I,I] -> [I,I] {
+  pushi(1)
+  read_number [
+    read_color
+    ltc [
+      popc
+      [-]
+      pushc(0)
+    ]
+    popc
+  read_number ]
+  popc
+  swapi
+  dupi
+  rolli4(1)
+  muli
+  addi
+  swapi
+}
+
+def impure main() {
+  pushi(0)
+  pushi(0)
+  push_read [
+    if (eqc_(':')) {
+      popc
+      pushi(1)
+      addi
+      #
+      process_line
+      #
+      pushc(0)
+    }
+  , ]
+  popc popi printi endl
+}
