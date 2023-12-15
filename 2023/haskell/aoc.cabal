@@ -79,6 +79,7 @@ library
     , extra
     , filepath
     , hashable
+    , insert-ordered-containers
     , lens
     , monad-loops
     , monad-st
@@ -190,6 +191,7 @@ executable aoc
     , extra
     , filepath
     , hashable
+    , insert-ordered-containers
     , lens
     , monad-loops
     , monad-st
