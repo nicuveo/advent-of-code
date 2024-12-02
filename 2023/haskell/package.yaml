@@ -106,6 +106,13 @@ executables:
     main: Main.hs
   }
 
+  tmp: {
+    <<: *exe,
+    other-modules: [],
+    main: app/Tmp.hs,
+    dependencies: [heaps, linear]
+  }
+
   # animation_test: {
   #   <<: *exe,
   #   other-modules: [],

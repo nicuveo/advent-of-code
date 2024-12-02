@@ -48,7 +48,7 @@ data Direction
   | SW
   | W
   | NW
-  deriving (Bounded, Enum, Eq, Show)
+  deriving (Bounded, Enum, Eq, Show, Ord)
 
 instance Hashable Direction where
   hashWithSalt x = hashWithSalt x . fromEnum

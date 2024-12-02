@@ -216,3 +216,85 @@ executable aoc
     , unordered-containers
     , vector
   default-language: Haskell2010
+
+executable tmp
+  main-is: app/Tmp.hs
+  default-extensions:
+      AllowAmbiguousTypes
+      ApplicativeDo
+      BangPatterns
+      BlockArguments
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DeriveDataTypeable
+      DeriveFoldable
+      DeriveFunctor
+      DeriveGeneric
+      DeriveLift
+      DeriveTraversable
+      DerivingVia
+      FlexibleContexts
+      FlexibleInstances
+      FunctionalDependencies
+      GADTs
+      GeneralizedNewtypeDeriving
+      ImportQualifiedPost
+      InstanceSigs
+      LambdaCase
+      MultiParamTypeClasses
+      MultiWayIf
+      NamedFieldPuns
+      OverloadedStrings
+      PackageImports
+      RankNTypes
+      RecordWildCards
+      RoleAnnotations
+      ScopedTypeVariables
+      StandaloneDeriving
+      StrictData
+      TupleSections
+      TypeApplications
+      TypeFamilies
+      TypeOperators
+      ViewPatterns
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-uni-patterns -Wmissing-home-modules -Wredundant-constraints -fwarn-tabs -O2 -threaded -rtsopts -with-rtsopts=-N4 -fno-warn-missing-signatures -fno-warn-unused-top-binds -fno-warn-unused-do-bind
+  build-depends:
+      QuickCheck
+    , array
+    , base >=4.7 && <5
+    , base16-bytestring
+    , bytestring
+    , containers
+    , cryptohash-md5
+    , data-has
+    , extra
+    , filepath
+    , hashable
+    , heaps
+    , insert-ordered-containers
+    , lens
+    , linear
+    , monad-loops
+    , monad-st
+    , mtl
+    , parallel
+    , parsec
+    , pqueue
+    , primitive
+    , random
+    , safe
+    , split
+    , strict
+    , string-qq
+    , tardis
+    , tasty
+    , tasty-hunit
+    , tasty-quickcheck
+    , text
+    , time
+    , transformers
+    , transformers-base
+    , unordered-containers
+    , vector
+  default-language: Haskell2010
