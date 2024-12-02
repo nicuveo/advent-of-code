@@ -1,0 +1,9 @@
+left 
+right 
+plus 
+minus
+loop_start 
+loop_end 
+read 
+print 
+right read loop_start right read loop_end left loop_start comment print left loop_end 

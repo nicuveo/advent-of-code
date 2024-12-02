@@ -1,0 +1,74 @@
+// read a given output symbol until we encounter a newline
+// we assume output symbols do not contain a \0, nor a newline
+// and that they're less than 80 characters long
+def impure read_symbol() {
+  > inc(79) >
+  while (readc nec_('\n')) {
+      swapc
+      ->
+  }
+  popc
+  [
+    -> swapc
+  ]
+}
+
+def impure print_symbol(C s) {
+    // assuming we are on the first multiple of 80 after all the symbols
+    set(s)
+    // while we must shift back
+    [
+      // dicrease the counter, move it 80 characters back
+      -
+      [<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+       <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<+
+       >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+       >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>-
+      ]
+      // move to the previous block
+      <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+      <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    ]
+    // we are on the 0 before the symbol we want to output
+    >
+    // while we are on a non-0 character, print it
+    [ . > ]
+    // head back to the beginning of the block
+    < [ < ]
+    // do the traversal the other way around
+    set(s)
+    [
+      -
+      [>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+       >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>+
+       <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+       <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<-
+      ]
+      >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    ]
+}
+
+def impure main() {
+  read_symbol // <
+  read_symbol // >
+  read_symbol // +
+  read_symbol // -
+  read_symbol // [
+  read_symbol // ]
+  read_symbol // ,
+  read_symbol // .
+  push_read [
+    if (eqc_('<')) { popc print_symbol(8) > }
+    if (eqc_('>')) { popc print_symbol(7) > }
+    if (eqc_('+')) { popc print_symbol(6) > }
+    if (eqc_('-')) { popc print_symbol(5) > }
+    if (eqc_('[')) { popc print_symbol(4) > }
+    if (eqc_(']')) { popc print_symbol(3) > }
+    if (eqc_(',')) { popc print_symbol(2) > }
+    if (eqc_('.')) { popc print_symbol(1) > }
+    // otherwise print the character
+    [ . [-] ]
+    popc
+  push_read ]
+}
