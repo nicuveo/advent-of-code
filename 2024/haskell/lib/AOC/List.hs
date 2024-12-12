@@ -8,8 +8,6 @@ module AOC.List where
 import Data.Function
 import Data.List     (groupBy, maximumBy, minimumBy)
 
-import AOC.Misc
-
 
 -- counting elements
 
@@ -17,7 +15,7 @@ countTrue :: [Bool] -> Int
 countTrue = countIf id
 
 countIf :: (a -> Bool) -> [a] -> Int
-countIf = length ... filter
+countIf predicate = length . filter predicate
 
 count :: Eq a => a -> [a] -> Int
 count a = length . filter (a ==)

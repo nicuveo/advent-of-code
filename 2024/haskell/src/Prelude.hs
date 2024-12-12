@@ -1,9 +1,9 @@
 module Prelude (module P) where
 
-import Control.Applicative        as P (liftA, liftA2)
+import Control.Applicative        as P (liftA)
 import Control.Arrow              as P (first, left, second, (&&&), (***),
                                         (<<<), (>>>))
-import Control.Monad              as P (when)
+import Control.Monad              as P (guard, when)
 import Control.Monad.Except       as P
 import Control.Monad.Identity     as P
 import Control.Monad.Reader       as P
@@ -36,3 +36,11 @@ import Data.Traversable           as P (for)
 import Data.Void                  as P (Void, absurd)
 import GHC.Generics               as P (Generic)
 import "base" Prelude             as P hiding (lookup)
+
+
+enumerate :: (Bounded a, Enum a) => [a]
+enumerate = [minBound .. maxBound]
+
+(...) :: (c -> d) -> (a -> b -> c) -> a -> b -> d
+(...) = (.) (.) (.)
+infixr 8 ...

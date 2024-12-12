@@ -19,7 +19,6 @@ library
       AOC.Grid.Sparse
       AOC.List
       AOC.MD5
-      AOC.Misc
       AOC.Parsing
       AOC.PathFinding
       AOC.Point

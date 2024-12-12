@@ -8,13 +8,11 @@ module AOC.Parsing where
 import Text.Parsec
 import Text.Parsec.String
 
-import AOC.Misc
-
 
 -- parsing
 
 parseWith :: Parser a -> String -> a
-parseWith = either (error . show) id ... flip parse ""
+parseWith parser input = either (error . show) id $ parse parser "" input
 
 parseLinesWith :: Parser a -> String -> [a]
 parseLinesWith p s = parseWith p <$> lines s

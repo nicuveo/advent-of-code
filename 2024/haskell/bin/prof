@@ -2,14 +2,10 @@
 
 set -e
 
-exe="$1"; shift
-arg=''
-if [ $# -eq 0 ] ; then
-    arg="../input"
-fi
+day="$1"; shift
 
 opts="--executable-profiling --library-profiling"
 
-stack build $opts aoc:$exe
-stack exec  $opts $exe -- +RTS -p -RTS "$arg" "$@"
-profiteur $exe.prof
+stack build $opts aoc:aoc
+stack exec  $opts aoc -- +RTS -p -RTS "../input" "$day" "$@"
+profiteur aoc.prof
