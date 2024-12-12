@@ -1,0 +1,107 @@
+def is_digit() [C] -> [C,B] {
+  dec('0')
+  ltc_(10)
+}
+
+def impure read_number() [] -> [I,B] {
+  pushc(0)
+  push_read
+  while (is_digit) {
+    swapc
+    pushc(10)
+    mulc
+    addc
+    push_read
+  }
+  // [C,C]
+  inc('0')
+  pushc(' ')
+  eqc
+  swapc
+  c_to_i
+  rollc5(4)
+}
+
+// total lvl1 lvl2 ... lvln okay direction
+
+def impure not_done_yet() [I,I,B,C] -> [I,I,B,C,B] {
+  rollc7(6)
+  dupc
+  rollc8(1)
+}
+
+def impure step() [I,I,B,C] -> [I,B,C] {
+  rollc10(2) // [B,C,I,I]
+  dupi2      // [B,C,I,I,I,I]
+  dupi2      // [B,C,I,I,I,I,I,I]
+  lti        // [B,C,I,I,I,I,B]
+  dupc [
+    popc
+    rollc9(1)  // [B,C,I,I,B,I,I]
+    swapi
+    rollc9(8)  // [B,C,I,I,I,I,B]
+  pushc(0) ] popc
+  rollc9(1)   // [B,C,I,I,B,I,I]
+  subi        // [B,C,I,I,B,I]
+  lei_(3)     // [B,C,I,I,B,I,B]
+  rollc5(1)   // [B,C,I,I,B,B,I]
+  i_to_b      // [B,C,I,I,B,B,B]
+  and         // [B,C,I,I,B,B]
+  rollc11(10) // [B,I,I,B,B,C]
+  if (nec_(2)) {
+    rollc3(2) // [B,C,B]
+    dupc2
+    eqc
+    rollc4(1) // [B,B,C,B]
+    swapc
+    popc
+  }
+  if (eqc_(2)) {
+    popc
+    pushc(1)  // [B1,B2,1]
+    rollc3(1) // [1,B1,B2]
+    swapc     // [1,B2,B1]
+  }
+  rollc3(1)   // [B,I,I,C,B,B]
+  rollc12(11) // [I,I,C,B,B,B]
+  and
+  and         // [I,I,C,B]
+  rollc10(2)  // [C,B,I,I]
+  popi        // [C,B,I]
+  rollc6(4)   // [I,C,B]
+  swapc       // [I,B,C]
+}
+
+def impure process_line() {
+  read_number [
+    popc
+  read_number ]
+  popc
+  pushc(1)
+  pushc(2)
+  #
+  while (not_done_yet) {
+    step
+  }
+  // [0,I,B,C]
+  popc
+  b_to_i // [0,I,R]
+  rolli3(1) // [R,0,I]
+  popi
+  popi
+  #
+}
+
+def impure main() {
+  >>>>
+  pushi(0) read_number [
+    popb
+    process_line
+    addi
+  pushi(0) read_number ]
+  popb
+  popi
+  popi
+  printi
+  endl
+}
