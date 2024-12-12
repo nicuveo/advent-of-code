@@ -1,0 +1,82 @@
+def is_digit() [C] -> [C,B] {
+  dec('0')
+  ltc_(10)
+}
+
+def main() {
+  pushi(0)
+  push_read
+  while (dupc c_to_b) {
+    if (eqc_('m')) {
+      popc
+      push_read
+      if (eqc_('u')) {
+        popc
+        push_read
+        if (eqc_('l')) {
+          popc
+          push_read
+          if (eqc_('(')) {
+            popc
+            pushi(0)
+            push_read
+            if (is_digit) {
+              c_to_i
+              addi
+              push_read
+              while (is_digit) {
+                c_to_i
+                swapi
+                pushi(10)
+                muli
+                addi
+                push_read
+              }
+              inc('0')
+              if (eqc_(',')) {
+                popc
+                pushi(0)
+                push_read
+                if (is_digit) {
+                  c_to_i
+                  addi
+                  push_read
+                  while (is_digit) {
+                    c_to_i
+                    swapi
+                    pushi(10)
+                    muli
+                    addi
+                    push_read
+                  }
+                  inc('0')
+                  if (eqc_(')')) {
+                    popc
+                    #
+                    muli
+                    addi
+                    pushi(0)
+                    pushi(0)
+                    pushc(0)
+                    #
+                  }
+                }
+                popc
+                popi
+                pushc(0)
+              }
+            }
+            popc
+            popi
+            pushc(0)
+          }
+        }
+      }
+    }
+    popc
+    push_read
+  }
+  popc
+  printi endl
+  popi
+}
