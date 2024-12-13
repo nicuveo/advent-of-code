@@ -2,3 +2,6 @@ resolver: lts-22.43
 
 packages:
   - .
+
+extra-deps:
+  - sbv-10.12

@@ -53,6 +53,7 @@ dependencies:
   - base >= 4.7 && < 5
   - QuickCheck
   - array
+  - async
   - base16-bytestring
   - bytestring
   - containers
@@ -72,6 +73,7 @@ dependencies:
   - primitive
   - random
   - safe
+  - sbv
   - split
   - strict
   - string-qq
@@ -80,8 +82,8 @@ dependencies:
   - tasty-quickcheck
   - text
   - time
-  - transformers-base
   - transformers
+  - transformers-base
   - unordered-containers
   - vector
 
