@@ -28,8 +28,7 @@ import Data.HashMap.Strict qualified as M
 import Data.List           qualified as L
 import Data.Maybe
 import Data.PQueue.Min     as Q
-
-
+import Safe
 
 
 -- library usage
@@ -92,10 +91,9 @@ unsafeFindAnyPathWith
   -> (a -> Int)
   -> a
   -> (a -> Bool)
-  -> [(Int, a)]
+  -> [[(Int, a)]]
 unsafeFindAnyPathWith edges heuristic start end =
-  fromMaybe (error "findPath: no path found") $
-  reconstructPath $
+  reconstructPaths $
   until hasFoundAnswer pathFindingStep $
   mkPFState edges heuristic start end
 
@@ -114,9 +112,15 @@ data PFState a = PFState
     -- ^ target point
   , pfQueue     :: Q.MinQueue (Cell a)
     -- ^ internal queue of cells
-  , pfNodeInfo  :: M.HashMap a (a, Int)
+  , pfNodeInfo  :: M.HashMap a ([a], Int)
     -- ^ cell's parent & cost
   }
+
+instance (Show a, Eq a) => Show (PFState a) where
+  show PFState {..} = unlines
+    [ "queue: " ++ show pfQueue
+    , "nodes: " ++ show pfNodeInfo
+    ]
 
 -- | Initializes the pathfinder's state.
 mkPFState
@@ -130,7 +134,7 @@ mkPFState edges heuristic start end =
   PFState edges heuristic start end queue nodeMap
   where
     queue = Q.singleton $ Cell (heuristic start) 0 start
-    nodeMap = M.singleton start (start, 0)
+    nodeMap = M.singleton start ([start], 0)
 
 -- | Gets the best node to be processed.
 currentNode :: PFState a -> a
@@ -152,9 +156,11 @@ hasFoundAnswer = Q.null . pfQueue
 
 -- | Returns whether we found an actual path.
 hasFoundPath :: PFState a -> Maybe a
-hasFoundPath s = do
+hasFoundPath s = snd <$> minimumByMay (compare `on` fst) do
   guard $ hasFoundAnswer s
-  L.find (pfEnd s) $ M.keys $ pfNodeInfo s
+  (cell, (_, cost)) <- M.toList (pfNodeInfo s)
+  guard $ pfEnd s cell
+  pure (cost, cell)
 
 
 -- cell type
@@ -201,8 +207,7 @@ pathFindingStep !s
       -- have we reached the end?
       if pfEnd s cellNode
       then
-        -- we clear the queue to indicate we're done
-        s { pfQueue = Q.empty }
+        s { pfQueue = newQueue }
       else
         let
           newState = s { pfQueue = newQueue }
@@ -219,10 +224,23 @@ reconstructPath state
   where
     go cell path
       | cell == pfStart state = newPath
-      | otherwise             = go parent newPath
+      | otherwise             = go (head parents) newPath
       where
-        (parent, cost) = pfNodeInfo state ! cell
+        (parents, cost) = pfNodeInfo state ! cell
         newPath = (cost, cell) : path
+
+-- | Reconstruct a path from a successful state
+reconstructPaths :: (Show a, Hashable a) => PFState a -> [[(Int, a)]]
+reconstructPaths state
+  | Just endNode <- hasFoundPath state = go [[]] endNode
+  | otherwise = []
+  where
+    go paths cell
+      | cell == pfStart state = newPaths
+      | otherwise             = concatMap (go newPaths) parents
+      where
+        (parents, cost) = pfNodeInfo state ! cell
+        newPaths = fmap ((cost, cell):) paths
 
 
 -- internal helpers
@@ -241,13 +259,19 @@ insertEdge Cell{..} state (distance, neighbour) =
     Just oldNeighbourCost
       -- we have, but the new cost is lower
       | newNeighbourCost < oldNeighbourCost -> stateWithNeighbour
+      -- we have, but the new cost is the same
+      | newNeighbourCost == oldNeighbourCost -> stateWithNewParent
       -- the cost is not lower, ignore the neighbour
       | otherwise -> state
   where
     stateWithNeighbour = state
       { pfQueue = Q.insert neighbourCell $ pfQueue state
-      , pfNodeInfo = M.insert neighbour (cellNode, newNeighbourCost) $ pfNodeInfo state
+      , pfNodeInfo = M.insert neighbour ([cellNode], newNeighbourCost) $ pfNodeInfo state
       }
+    stateWithNewParent = state
+      { pfNodeInfo = M.adjust addParent neighbour $ pfNodeInfo state
+      }
+    addParent (parents, cost) = (cellNode : parents, cost)
     newNeighbourCost = cellCostSoFar + distance
     neighbourCell = Cell
       (newNeighbourCost + pfHeuristic state neighbour)
