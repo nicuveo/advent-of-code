@@ -1,0 +1,161 @@
+def is_digit() [C] -> [C,B] {
+  dec('0')
+  ltc_(10)
+}
+
+def read_number() [] -> [I] {
+  pushi(1)
+  pushi(0)
+  push_read
+  while (is_digit not) {
+    inc(3)
+    if (eqc_(0)) {
+      popc
+      popi
+      popi
+      pushi(-1)
+      pushi(0)
+      pushc(0)
+    }
+    readc
+  }
+  inc('0')
+  while (is_digit) {
+    c_to_i
+    swapi
+    pushi(10)
+    muli
+    addi
+    push_read
+  }
+  popc
+  muli
+}
+
+def impure crash() {
+  [-]+[]
+}
+
+def impure is_negative() [I] -> [I,B] {
+  dupi popc popc popc pushc(128) lec
+}
+
+def process_line() [I,I,I,I] -> [I,I,I,I] {
+  read_number
+  read_number
+  read_number
+  read_number
+
+  // # // [px, py, vx, vy]
+
+  pushi(100)
+  muli
+  swapi
+  pushi(100)
+  muli
+
+  // # // [px, py, vy*100, vx*100]
+
+  rolli3(1)
+
+  // # // [px, vx*100, py, vy*100]
+
+  addi
+  rolli3(1)
+  addi
+
+  // # // [ry, rx]
+
+  while (is_negative) {
+    pushi(101)
+    addi
+  }
+  pushi(101)
+  swapi
+  modi
+
+  // # // [ry, rx']
+
+  swapi
+  while (is_negative) {
+    pushi(103)
+    addi
+  }
+  pushi(103)
+  swapi
+  modi
+
+  // # // [rx', ry']
+
+  dupi2
+  dupi2
+  dupi2
+
+  // # // [rx, ry, rx, ry, rx, ry, rx, ry]
+
+  pushi(51) gti b_to_i
+  swapi
+  pushi(50) gti b_to_i
+  muli
+
+  rolli7(1)
+
+  pushi(51) gti b_to_i
+  swapi
+  pushi(50) lti b_to_i
+  muli
+
+  rolli5(1)
+
+  pushi(51) lti b_to_i
+  swapi
+  pushi(50) gti b_to_i
+  muli
+
+  rolli3(1)
+
+  pushi(51) lti b_to_i
+  swapi
+  pushi(50) lti b_to_i
+  muli
+
+  // # // [q1, q2, q3, q4, b1, b2, b3, b4]
+
+  rolli8(3)
+  addi
+  // [b2, b3, b4, q1, q2, q3, q4']
+  rolli7(3)
+  addi
+  // [q2, q3, q4', b2, b3, q1']
+  rolli4(3)
+  rolli6(3)
+  addi
+  // [b3, q1', q4', q2, q3']
+  swapi
+  rolli5(4)
+  addi
+  // [q1', q4', q3', q2']
+  rolli3(1)
+  swapi
+
+  // # // [q1', q2', q3', q4']
+}
+
+def main() {
+  pushi(0)
+  pushi(0)
+  pushi(0)
+  pushi(0)
+  while (push_read c_to_b) {
+    process_line #
+  }
+  prints("result = ")
+  printi popi
+  prints(" * ")
+  printi popi
+  prints(" * ")
+  printi popi
+  prints(" * ")
+  printi popi
+  endl
+}
