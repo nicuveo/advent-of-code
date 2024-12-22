@@ -22,24 +22,13 @@ def impure read_number() [] -> [I,B] {
 
 def impure move_left() {
   // [a, b, 0]
-  <<<<
-  swapi >[-]>[-]>[-]>[-]<<<<
+  <<<< swapi
   // [b, a, 0]
   [[>>>>+<<<<-]>>+<<]>>[<<+>>-]<<<
   [[>>>>+<<<<-]>+<]<
   [[>>>>+<<<<-]>>+<<]<
   [[>>>>+<<<<-]>>>+<<<]>>>
   // [b, r, a]
-}
-
-def impure move_zero_left() {
-  // [a, 0]
-  <<<<
-  [[>>>>+<<<<-]>>+<<]>>[<<+>>-]<<<
-  [[>>>>+<<<<-]>+<]<
-  [[>>>>+<<<<-]>>+<<]<
-  [[>>>>+<<<<-]>>>+<<<]>>>
-  // [r, a]
 }
 
 def impure move_two_zeroes_left() {
@@ -51,17 +40,6 @@ def impure move_two_zeroes_left() {
   [[>>>>>>>>+<<<<<<<<-]>>>>+<<<<]
   >>>>[-<+>]<
   // [r, 0, a]
-}
-
-def impure addi64() [I,I,I,I] -> [I,I] {
-  <<<<<<<<[->>>>>>>>>>+                        <<<<<<<<<<]>>>>>>>>[->>+ dupc not [-<<+>>] popc <<]>>[-<<<<<<<<<<+>>>>>>>>>>]<<<
-  <<<<<<<<[->>>>>>>>>>+ dupc not [-<<+>>] popc <<<<<<<<<<]>>>>>>>>[->>+ dupc not [-<<+>>] popc <<]>>[-<<<<<<<<<<+>>>>>>>>>>]<<<
-  <<<<<<<<[->>>>>>>>>>+ dupc not [-<<+>>] popc <<<<<<<<<<]>>>>>>>>[->>+ dupc not [-<<+>>] popc <<]>>[-<<<<<<<<<<+>>>>>>>>>>]<<<
-  <<<<<<<<[->>>>>>>>>>+ dupc not [-<<+>>] popc <<<<<<<<<<]>>>>>>>>[->>+ dupc not [-<<+>>] popc <<]>>[-<<<<<<<<<<+>>>>>>>>>>]<<<
-  <<<<<<<<[->>>>>>>>>>+ dupc not [-<<+>>] popc <<<<<<<<<<]>>>>>>>>[->>+ dupc not [-<<+>>] popc <<]>>[-<<<<<<<<<<+>>>>>>>>>>]<<<
-  <<<<<<<<[->>>>>>>>>>+ dupc not [-<<+>>] popc <<<<<<<<<<]>>>>>>>>[->>+ dupc not [-<<+>>] popc <<]>>[-<<<<<<<<<<+>>>>>>>>>>]<<<
-  <<<<<<<<[->>>>>>>>>>+ dupc not [-<<+>>] popc <<<<<<<<<<]>>>>>>>>[->>+ dupc not [-<<+>>] popc <<]>>[-<<<<<<<<<<+>>>>>>>>>>]<<<
-  <<<<<<<<[->>>>>>>>>>+                        <<<<<<<<<<]>>>>>>>>[->>+                        <<]>>[-<<<<<<<<<<+>>>>>>>>>>]<<<
 }
 
 def impure move_zero_right() {
@@ -133,11 +111,9 @@ def impure process_line() {
         // [result, 0, [newList], product, sum, 0, [oldList-1], 0, 0, total, newNumber, continue]
         >>>>>>>>>>>>
 
-
         rolli4(3)
         popi
         // [result, 0, [newList+2], 0, [oldList-1], 0, total, newNumber, continue]
-
       }
 
       #
@@ -189,13 +165,14 @@ def impure process_line() {
     i_to_b b_to_i
     // [result, 0, total, b]
     muli
-    addi64
+    swapi
+    popi
+    addi
     pushi(1)
   }
 }
 
 def impure main() {
-  pushi(0)
   pushi(0)
   pushi(1)
   while (nei_(0)) {
@@ -203,10 +180,6 @@ def impure main() {
     process_line
   }
   popi
-  swapi
   prints("result: ")
-  printi
-  prints(" * 4294967296 + ")
-  popi
   printi endl
 }
