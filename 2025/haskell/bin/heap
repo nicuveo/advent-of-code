@@ -1,0 +1,26 @@
+#! /usr/bin/env bash
+
+set -e
+
+exe="$1"; shift
+arg=''
+if [ $# -eq 0 ] ; then
+    arg="../input"
+fi
+
+opts="--profiling --executable-profiling --library-profiling"
+
+stack build $opts aoc:$exe
+
+function run_pretty() {
+    while true; do
+        hp2pretty $exe.hp &> /dev/null
+        sleep 2
+    done
+}
+
+run_pretty&
+run_pretty_pid=$!
+trap 'kill -9 $run_pretty_pid' EXIT
+
+stack exec  $opts $exe -- +RTS -h -RTS "$arg" "$@"

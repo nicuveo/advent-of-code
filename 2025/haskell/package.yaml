@@ -1,0 +1,105 @@
+name: aoc
+
+ghc-options:
+  - -Wall
+  - -Wcompat
+  - -Widentities
+  - -Wincomplete-uni-patterns
+  - -Wmissing-home-modules
+  - -Wredundant-constraints
+  - -Wtabs
+  - -fhide-source-paths
+  - -foptimal-applicative-do
+  - -funbox-small-strict-fields
+
+language: GHC2021
+
+default-extensions:
+  - AllowAmbiguousTypes
+  - ApplicativeDo
+  - BlockArguments
+  - DataKinds
+  - DefaultSignatures
+  - DerivingVia
+  - FunctionalDependencies
+  - GADTs
+  - LambdaCase
+  - MultiWayIf
+  - NoImplicitPrelude
+  - OverloadedStrings
+  - PackageImports
+  - RecordWildCards
+  - RoleAnnotations
+  - StrictData
+  - TypeFamilies
+  - ViewPatterns
+
+dependencies:
+  - base >= 4.7 && < 5
+  - QuickCheck
+  - array
+  - async
+  - base16-bytestring
+  - bytestring
+  - containers
+  - cryptohash-md5
+  - data-has
+  - extra
+  - filepath
+  - hashable
+  - insert-ordered-containers
+  - lens
+  - monad-loops
+  - monad-st
+  - mtl
+  - parallel
+  - parsec
+  - pqueue
+  - primitive
+  - random
+  - safe
+  - sbv
+  - split
+  - strict
+  - string-qq
+  - tasty
+  - tasty-hunit
+  - tasty-quickcheck
+  - text
+  - time
+  - transformers
+  - transformers-base
+  - unordered-containers
+  - vector
+
+library:
+  source-dirs: lib
+
+_exe: &exe
+  ghc-options:
+    - -O2
+    - -threaded -rtsopts -with-rtsopts=-N4
+    - -fno-warn-missing-signatures
+    - -fno-warn-unused-top-binds
+    - -fno-warn-unused-do-bind
+  dependencies: aoc
+
+executables:
+  aoc: {
+    <<: *exe,
+    source-dirs: src,
+    default-extensions: [NoImplicitPrelude],
+    main: Main.hs
+  }
+
+  # animation_test: {
+  #   <<: *exe,
+  #   other-modules: [],
+  #   main: app/AnimationTest.hs
+  # }
+  #
+  pf_test: {
+    <<: *exe,
+    other-modules: [],
+    main: app/PathFindingTest.hs
+  }

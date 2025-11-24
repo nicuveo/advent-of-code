@@ -1,0 +1,12 @@
+[package]
+name = "aoc"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.5.38", features = ["derive"] }
+exitcode = "1.1.2"
+anyhow = "1.0"
+nom = "8.0.0"
+scan_fmt = "0.2.6"
+itertools = "0.14.0"

@@ -1,0 +1,11 @@
+#! /usr/bin/env bash
+
+set -e
+
+day="$1"; shift
+
+opts="--executable-profiling --library-profiling"
+
+stack build $opts aoc:aoc
+stack exec  $opts aoc -- +RTS -p -RTS "../input" "$day" "$@"
+profiteur aoc.prof
