@@ -3,6 +3,8 @@ module AOC.Grid.Flat where
 
 -- imports
 
+import "this" Prelude
+
 import Control.Exception
 import Data.Vector       qualified as V
 import Safe

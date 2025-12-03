@@ -3,8 +3,9 @@ module AOC.Point where
 
 -- imports
 
+import "this" Prelude
+
 import Data.Hashable
-import GHC.Generics  (Generic)
 import Text.Printf
 
 

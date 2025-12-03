@@ -3,14 +3,11 @@ module AOC.Debug.Animate where
 
 -- imports
 
-import Control.Applicative
+import "this" Prelude
+
 import Control.Exception
-import Control.Monad.Extra        hiding (whileM)
-import Control.Monad.Loops        (whileM, whileM_)
-import Control.Monad.Reader
-import Control.Monad.State.Strict
-import Data.Foldable              (traverse_)
-import Data.Maybe
+import Control.Monad.Extra hiding (whileM)
+import Control.Monad.Loops (whileM, whileM_)
 import Data.Time.Clock
 import System.IO
 import Text.Printf

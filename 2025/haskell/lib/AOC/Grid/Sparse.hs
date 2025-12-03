@@ -3,6 +3,8 @@ module AOC.Grid.Sparse where
 
 -- imports
 
+import "this" Prelude
+
 import Data.HashMap.Strict qualified as M
 import Safe
 

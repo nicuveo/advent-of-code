@@ -22,50 +22,32 @@ library
       AOC.Parsing
       AOC.PathFinding
       AOC.Point
+      Prelude
   other-modules:
       Paths_aoc
   hs-source-dirs:
       lib
+      common
   default-extensions:
       AllowAmbiguousTypes
       ApplicativeDo
-      BangPatterns
       BlockArguments
-      ConstraintKinds
       DataKinds
       DefaultSignatures
-      DeriveDataTypeable
-      DeriveFoldable
-      DeriveFunctor
-      DeriveGeneric
-      DeriveLift
-      DeriveTraversable
       DerivingVia
-      FlexibleContexts
-      FlexibleInstances
       FunctionalDependencies
       GADTs
-      GeneralizedNewtypeDeriving
-      ImportQualifiedPost
-      InstanceSigs
       LambdaCase
-      MultiParamTypeClasses
       MultiWayIf
-      NamedFieldPuns
+      NoImplicitPrelude
       OverloadedStrings
       PackageImports
-      RankNTypes
       RecordWildCards
       RoleAnnotations
-      ScopedTypeVariables
-      StandaloneDeriving
       StrictData
-      TupleSections
-      TypeApplications
       TypeFamilies
-      TypeOperators
       ViewPatterns
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-uni-patterns -Wmissing-home-modules -Wredundant-constraints -fwarn-tabs
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-uni-patterns -Wmissing-home-modules -Wredundant-constraints -Wtabs -fhide-source-paths -foptimal-applicative-do -funbox-small-strict-fields
   build-depends:
       QuickCheck
     , array
@@ -103,7 +85,7 @@ library
     , transformers-base
     , unordered-containers
     , vector
-  default-language: Haskell2010
+  default-language: GHC2021
 
 executable aoc
   main-is: Main.hs
@@ -124,47 +106,28 @@ executable aoc
       Paths_aoc
   hs-source-dirs:
       src
+      common
   default-extensions:
       AllowAmbiguousTypes
       ApplicativeDo
-      BangPatterns
       BlockArguments
-      ConstraintKinds
       DataKinds
       DefaultSignatures
-      DeriveDataTypeable
-      DeriveFoldable
-      DeriveFunctor
-      DeriveGeneric
-      DeriveLift
-      DeriveTraversable
       DerivingVia
-      FlexibleContexts
-      FlexibleInstances
       FunctionalDependencies
       GADTs
-      GeneralizedNewtypeDeriving
-      ImportQualifiedPost
-      InstanceSigs
       LambdaCase
-      MultiParamTypeClasses
       MultiWayIf
-      NamedFieldPuns
+      NoImplicitPrelude
       OverloadedStrings
       PackageImports
-      RankNTypes
       RecordWildCards
       RoleAnnotations
-      ScopedTypeVariables
-      StandaloneDeriving
       StrictData
-      TupleSections
-      TypeApplications
       TypeFamilies
-      TypeOperators
       ViewPatterns
       NoImplicitPrelude
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-uni-patterns -Wmissing-home-modules -Wredundant-constraints -fwarn-tabs -O2 -threaded -rtsopts -with-rtsopts=-N4 -fno-warn-missing-signatures -fno-warn-unused-top-binds -fno-warn-unused-do-bind
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-uni-patterns -Wmissing-home-modules -Wredundant-constraints -Wtabs -fhide-source-paths -foptimal-applicative-do -funbox-small-strict-fields -O2 -threaded -rtsopts -with-rtsopts=-N4 -fno-warn-missing-signatures -fno-warn-unused-top-binds -fno-warn-unused-do-bind
   build-depends:
       QuickCheck
     , aoc
@@ -203,50 +166,30 @@ executable aoc
     , transformers-base
     , unordered-containers
     , vector
-  default-language: Haskell2010
+  default-language: GHC2021
 
 executable pf_test
   main-is: app/PathFindingTest.hs
   default-extensions:
       AllowAmbiguousTypes
       ApplicativeDo
-      BangPatterns
       BlockArguments
-      ConstraintKinds
       DataKinds
       DefaultSignatures
-      DeriveDataTypeable
-      DeriveFoldable
-      DeriveFunctor
-      DeriveGeneric
-      DeriveLift
-      DeriveTraversable
       DerivingVia
-      FlexibleContexts
-      FlexibleInstances
       FunctionalDependencies
       GADTs
-      GeneralizedNewtypeDeriving
-      ImportQualifiedPost
-      InstanceSigs
       LambdaCase
-      MultiParamTypeClasses
       MultiWayIf
-      NamedFieldPuns
+      NoImplicitPrelude
       OverloadedStrings
       PackageImports
-      RankNTypes
       RecordWildCards
       RoleAnnotations
-      ScopedTypeVariables
-      StandaloneDeriving
       StrictData
-      TupleSections
-      TypeApplications
       TypeFamilies
-      TypeOperators
       ViewPatterns
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-uni-patterns -Wmissing-home-modules -Wredundant-constraints -fwarn-tabs -O2 -threaded -rtsopts -with-rtsopts=-N4 -fno-warn-missing-signatures -fno-warn-unused-top-binds -fno-warn-unused-do-bind
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-uni-patterns -Wmissing-home-modules -Wredundant-constraints -Wtabs -fhide-source-paths -foptimal-applicative-do -funbox-small-strict-fields -O2 -threaded -rtsopts -with-rtsopts=-N4 -fno-warn-missing-signatures -fno-warn-unused-top-binds -fno-warn-unused-do-bind
   build-depends:
       QuickCheck
     , aoc
@@ -285,4 +228,4 @@ executable pf_test
     , transformers-base
     , unordered-containers
     , vector
-  default-language: Haskell2010
+  default-language: GHC2021

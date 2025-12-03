@@ -73,7 +73,7 @@ dependencies:
   - vector
 
 library:
-  source-dirs: lib
+  source-dirs: [lib, common]
 
 _exe: &exe
   ghc-options:
@@ -87,7 +87,7 @@ _exe: &exe
 executables:
   aoc: {
     <<: *exe,
-    source-dirs: src,
+    source-dirs: [src, common],
     default-extensions: [NoImplicitPrelude],
     main: Main.hs
   }

@@ -3,6 +3,8 @@ module AOC.Debug.Color where
 
 -- imports
 
+import "this" Prelude
+
 import Data.Ratio
 import Data.Word
 import Text.Printf

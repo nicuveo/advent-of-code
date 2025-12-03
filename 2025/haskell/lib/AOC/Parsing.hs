@@ -5,6 +5,8 @@ module AOC.Parsing where
 
 -- import
 
+import "this" Prelude
+
 import Text.Parsec
 import Text.Parsec.String
 

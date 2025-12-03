@@ -20,6 +20,8 @@ module AOC.PathFinding
 
 -- imports
 
+import "this" Prelude
+
 import Control.Monad       (guard)
 import Data.Function       (on)
 import Data.Hashable       (Hashable)

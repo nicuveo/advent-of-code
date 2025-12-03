@@ -5,8 +5,10 @@ module AOC.List where
 
 -- import
 
+import "this" Prelude
+
 import Data.Function
-import Data.List     (groupBy, maximumBy, minimumBy)
+import Data.List      (groupBy, maximumBy, minimumBy)
 
 
 -- counting elements

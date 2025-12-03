@@ -1,5 +1,7 @@
 module AOC.Debug.Graph where
 
+import "this" Prelude
+
 import Data.Graph
 import Data.Maybe
 import Text.Printf

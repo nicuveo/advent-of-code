@@ -5,6 +5,8 @@ module AOC.MD5 where
 
 -- import
 
+import "this" Prelude
+
 import Crypto.Hash.MD5        (hash)
 import Data.ByteString.Base16 (encode)
 import Data.ByteString.Char8  (pack, unpack)
