@@ -1,0 +1,74 @@
+def is_digit() [C] -> [C,B] {
+  dec('0')
+  ltc_(10)
+}
+
+def read_number() [] -> [I] {
+  pushi(0)
+  push_read
+  while (is_digit) {
+    c_to_i
+    swapi
+    pushi(10)
+    muli
+    addi
+    push_read
+  }
+  popc
+}
+
+def impure stepR() [I,I] -> [I,I] {
+  read_number() // [z, p, a]
+  addi
+  pushi(100)
+  swapi
+  modi
+  if (eqi_(0)) {
+    swapi
+    pushi(1)
+    addi
+    swapi
+  }
+}
+
+def impure stepL() [I,I] -> [I,I] {
+  read_number() // [z, p, a]
+  swapi
+  subi
+  pushi(1000)
+  addi
+  pushi(100)
+  swapi
+  modi
+  if (eqi_(0)) {
+    swapi
+    pushi(1)
+    addi
+    swapi
+  }
+}
+
+def step() [I,I,C] -> [I,I] {
+    if (eqc_('L')) {
+      popc
+      stepL
+      pushc(1)
+    }
+    if (eqc_('R')) {
+      popc
+      stepR
+      pushc(1)
+    }
+    popc
+    #
+}
+
+def impure main() {
+  pushi(0)
+  pushi(50)
+  >,[ step >,]
+  popc
+  popi
+  printi
+  endl
+}
