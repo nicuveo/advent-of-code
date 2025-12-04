@@ -91,6 +91,7 @@ executable aoc
   main-is: Main.hs
   other-modules:
       Day01
+      Day01TypeLevel
       Day02
       Day03
       Day04
