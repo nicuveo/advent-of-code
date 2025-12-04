@@ -4,6 +4,9 @@ module Day01TypeLevel where
 
 import "this" Prelude
 
+
+-- numbers
+
 data Zero
 data Succ n
 
@@ -109,52 +112,82 @@ type N98  = Succ N97
 type N99  = Succ N98
 type N100 = Succ N99
 
-data True
-data False
-
-
 type family Add x y where
-  Add Zero b = b
-  Add a Zero = a
-  Add (Succ a) b = Add a (Succ b)
+  Add Zero y = y
+  Add x Zero = x
+  Add x (Succ y) = Add (Succ x) y
 
-type family Sub x y where
-  Sub a Zero = a
-  Sub (Succ a) (Succ b) = Sub a b
 
-type family GE x y where
-  GE a Zero = True
-  GE Zero b = False
-  GE (Succ a) (Succ b) = GE a b
+-- rotation
 
-type family Mod x y where
-  Mod x y = Mod' (GE x y) x y
+data Result position zeroes
 
-type family Mod' ge x y where
-  Mod' True  x y = Mod (Sub x y) y
-  Mod' False x y = x
+type family TurnRight pos delta where
+  TurnRight pos delta = TurnRight' pos N0 delta
+
+type family TurnRight' pos zeroes delta where
+  TurnRight' pos zeroes Zero     = Result pos zeroes
+  TurnRight' N99 zeroes (Succ d) = TurnRight' N0 (Succ zeroes) d
+  TurnRight' pos zeroes (Succ d) = TurnRight' (Succ pos) zeroes d
+
+type family TurnLeft pos delta where
+  TurnLeft pos delta = TurnLeft' pos N0 delta
+
+type family TurnLeft' pos zeroes delta where
+  TurnLeft' pos      zeroes Zero     = Result pos zeroes
+  TurnLeft' N0       zeroes (Succ d) = TurnLeft' N99 zeroes d
+  TurnLeft' N1       zeroes (Succ d) = TurnLeft' N0 (Succ zeroes) d
+  TurnLeft' (Succ p) zeroes (Succ d) = TurnLeft' p zeroes d
 
 data Left  n
 data Right n
 
+type family Apply pos step where
+  Apply pos (Left  n) = TurnLeft  pos n
+  Apply pos (Right n) = TurnRight pos n
+
+type family Position result where
+  Position (Result position zeroes) = position
+
+
+-- list
+
 data Nil
-data Step s i
+data Cons s i
+
+
+-- part 1
 
 type family Part1 i where
-  Part1 i = Fold N50 N0 i
+  Part1 i = Fold1 N50 N0 i
 
-type family Fold position counter instructions where
-  Fold position counter Nil =
+type family Fold1 pos counter instructions where
+  Fold1 pos counter Nil =
     counter
-  Fold position counter (Step (Right n) instructions) =
-    Fold' (Mod (Add position n) N100) counter instructions
-  Fold position counter (Step (Left n) instructions) =
-    Fold' (Mod (Sub (Add position N100) n) N100) counter instructions
+  Fold1 pos counter (Cons step instructions) =
+    Fold1' (Position (Apply pos step)) counter instructions
 
-type family Fold' position counter instructions where
-  Fold' Zero counter instructions = Fold Zero (Succ counter) instructions
-  Fold' pos  counter instructions = Fold pos counter instructions
+type family Fold1' pos counter instructions where
+  Fold1' N0  counter instructions = Fold1 N0 (Succ counter) instructions
+  Fold1' pos counter instructions = Fold1 pos counter instructions
 
+
+-- part 2
+
+type family Part2 i where
+  Part2 i = Fold2 N50 N0 i
+
+type family Fold2 pos counter instructions where
+  Fold2 pos counter Nil =
+    counter
+  Fold2 pos counter (Cons step instructions) =
+    Fold2' (Apply pos step) counter instructions
+
+type family Fold2' result counter instructions where
+  Fold2' (Result pos zeroes) counter instructions = Fold2 pos (Add counter zeroes) instructions
+
+
+-- reify
 
 class Reify a where
   reify :: Int
@@ -166,19 +199,22 @@ instance Reify n => Reify (Succ n) where
   reify = succ $ reify @n
 
 
+-- main
+
 type Example =
-  ( Step (Left  N68)
-  ( Step (Left  N30)
-  ( Step (Right N48)
-  ( Step (Left  N5 )
-  ( Step (Right N60)
-  ( Step (Left  N55)
-  ( Step (Left  N1 )
-  ( Step (Left  N99)
-  ( Step (Right N14)
-  ( Step (Left  N82)
+  ( Cons (Left  N68)
+  ( Cons (Left  N30)
+  ( Cons (Right N48)
+  ( Cons (Left  N5 )
+  ( Cons (Right N60)
+  ( Cons (Left  N55)
+  ( Cons (Left  N1 )
+  ( Cons (Left  N99)
+  ( Cons (Right N14)
+  ( Cons (Left  N82)
   ( Nil )))))))))))
 
 main :: IO ()
 main = do
   print $ reify @(Part1 Example)
+  print $ reify @(Part2 Example)
