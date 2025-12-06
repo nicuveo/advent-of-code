@@ -22,6 +22,7 @@ library
       AOC.Parsing
       AOC.PathFinding
       AOC.Point
+      AOC.RangeSet
       Prelude
   other-modules:
       Paths_aoc
@@ -96,6 +97,7 @@ executable aoc
       Day03
       Day04
       Day05
+      Day05TypeLevel
       Day06
       Day07
       Day08
