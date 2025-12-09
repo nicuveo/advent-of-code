@@ -3,15 +3,15 @@ init
 >>>>>>>>>>>>>>>
 +[<+>,-----------------------------------------------------------------------------------]
 [,----------]
-<<<<<<<<
+<<<<<<
 
 main loop
 
 ,[----------[<+>------------------------------------[
-[-]<
+[-]<#
 
   copy the splitter
-  [->+>>>>+<<<<<]>[-<+>]>>>>>>>
+  [->+>>+<<<]>[-<+>]>>>>>
 
   iterate over set points
   [
@@ -33,6 +33,7 @@ main loop
   <<<<[>[-<<<<+>>>>]<<<<<]
 
   if we did remove a splitter we must insert its neighbours in the set
+  #
   >[
     but start by increasing the counter then do the carry
     <<<<<<+
@@ -80,7 +81,7 @@ main loop
 
     go back up
     [<<<<]
-  >]<<<
+  >]<
 
 <],----------]<[-]>,]
 
