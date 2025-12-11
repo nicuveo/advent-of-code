@@ -1,11 +1,12 @@
-import           Data.Bool
-import qualified Data.HashMap.Strict as M
-import           Data.Ratio
-import           System.Random
+import "this" Prelude
 
-import           AOC
-import           AOC.Debug
-import           AOC.Grid.Flat
+import Data.HashMap.Strict qualified as M
+import Data.Ratio
+import System.Random
+
+import AOC
+import AOC.Debug
+import AOC.Grid.Flat
 
 
 type Maze = Grid Char

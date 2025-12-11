@@ -56,8 +56,8 @@ part2 = snd . L.foldl' step (50, 0)
 example :: String
 example = "L68\nL30\nR48\nL5\nR60\nL55\nL1\nL99\nR14\nL82"
 
-main :: String -> IO ()
-main rawData = do
+run :: String -> IO ()
+run rawData = do
   let testInput = parseInput example
       realInput = parseInput rawData
   putStrLn "# Part 1"

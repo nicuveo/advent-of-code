@@ -25,8 +25,8 @@ part2 = undefined
 example :: String
 example = ""
 
-main :: String -> IO ()
-main rawData = do
+run :: String -> IO ()
+run rawData = do
   let testInput = parseInput example
       realInput = parseInput rawData
   putStrLn "# Part 1"

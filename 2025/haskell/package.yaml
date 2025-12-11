@@ -88,7 +88,6 @@ executables:
   aoc: {
     <<: *exe,
     source-dirs: [src, common],
-    default-extensions: [NoImplicitPrelude],
     main: Main.hs
   }
 
@@ -100,6 +99,6 @@ executables:
   #
   pf_test: {
     <<: *exe,
-    other-modules: [],
-    main: app/PathFindingTest.hs
+    source-dirs: [app, common],
+    main: PathFindingTest.hs
   }

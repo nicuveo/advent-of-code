@@ -147,8 +147,8 @@ example = "\
   \984,92,344\n\
   \425,690,689"
 
-main :: String -> IO ()
-main rawData = do
+run :: String -> IO ()
+run rawData = do
   let testInput = parseInput example
       realInput = parseInput rawData
   putStrLn "# Part 1"

@@ -129,7 +129,6 @@ executable aoc
       StrictData
       TypeFamilies
       ViewPatterns
-      NoImplicitPrelude
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-uni-patterns -Wmissing-home-modules -Wredundant-constraints -Wtabs -fhide-source-paths -foptimal-applicative-do -funbox-small-strict-fields -O2 -threaded -rtsopts -with-rtsopts=-N4 -fno-warn-missing-signatures -fno-warn-unused-top-binds -fno-warn-unused-do-bind
   build-depends:
       QuickCheck
@@ -172,7 +171,13 @@ executable aoc
   default-language: GHC2021
 
 executable pf_test
-  main-is: app/PathFindingTest.hs
+  main-is: PathFindingTest.hs
+  other-modules:
+      Prelude
+      Paths_aoc
+  hs-source-dirs:
+      app
+      common
   default-extensions:
       AllowAmbiguousTypes
       ApplicativeDo

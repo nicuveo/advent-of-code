@@ -41,8 +41,8 @@ example = "\
 \234234234234278\n\
 \818181911112111\n"
 
-main :: String -> IO ()
-main rawData = do
+run :: String -> IO ()
+run rawData = do
   let testInput = parseInput example
       realInput = parseInput rawData
   putStrLn "# Part 1"

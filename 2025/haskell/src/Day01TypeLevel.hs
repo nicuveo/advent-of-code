@@ -199,7 +199,7 @@ instance Reify n => Reify (Succ n) where
   reify = succ $ reify @n
 
 
--- main
+-- run
 
 type Example =
   ( Cons (Left  N68)
@@ -214,7 +214,7 @@ type Example =
   ( Cons (Left  N82)
   ( Nil )))))))))))
 
-main :: IO ()
-main = do
+run :: IO ()
+run = do
   print $ reify @(Part1 Example)
   print $ reify @(Part2 Example)
