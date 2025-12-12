@@ -41,10 +41,11 @@ mains =
 main :: IO ()
 main = do
   args <- getArgs
-  when (length args < 2) printUsageAndDie
-  let folder = head args
-  for_ (tail args) \n -> do
-    day <- maybe printUsageAndDie pure $ readMay n
-    putStrLn $ printf "### Day %02d ###" day
-    input <- getInput day folder
-    (mains !! pred day) input
+  case args of
+    (folder:days) -> do
+      for_ days \n -> do
+        day <- maybe printUsageAndDie pure $ readMay n
+        putStrLn $ printf "### Day %02d ###" day
+        input <- getInput day folder
+        (mains !! pred day) input
+    _ -> printUsageAndDie

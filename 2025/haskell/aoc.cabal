@@ -61,6 +61,7 @@ library
     , data-has
     , extra
     , filepath
+    , graphwiz
     , hashable
     , insert-ordered-containers
     , lens
@@ -81,6 +82,7 @@ library
     , tasty-hunit
     , tasty-quickcheck
     , text
+    , text-builder
     , time
     , transformers
     , transformers-base
@@ -143,6 +145,7 @@ executable aoc
     , data-has
     , extra
     , filepath
+    , graphwiz
     , hashable
     , insert-ordered-containers
     , lens
@@ -163,6 +166,7 @@ executable aoc
     , tasty-hunit
     , tasty-quickcheck
     , text
+    , text-builder
     , time
     , transformers
     , transformers-base
@@ -211,6 +215,7 @@ executable pf_test
     , data-has
     , extra
     , filepath
+    , graphwiz
     , hashable
     , insert-ordered-containers
     , lens
@@ -231,6 +236,7 @@ executable pf_test
     , tasty-hunit
     , tasty-quickcheck
     , text
+    , text-builder
     , time
     , transformers
     , transformers-base

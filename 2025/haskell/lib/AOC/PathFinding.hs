@@ -22,9 +22,6 @@ module AOC.PathFinding
 
 import "this" Prelude
 
-import Control.Monad       (guard)
-import Data.Function       (on)
-import Data.Hashable       (Hashable)
 import Data.HashMap.Strict ((!), (!?))
 import Data.HashMap.Strict qualified as M
 import Data.List           qualified as L
@@ -126,7 +123,7 @@ instance (Show a, Eq a) => Show (PFState a) where
 
 -- | Initializes the pathfinder's state.
 mkPFState
-  :: ((Show a, Hashable a))
+  :: (Show a, Hashable a)
   => (a -> [(Int, a)]) -- ^ edges function
   -> (a -> Int)        -- ^ heuristic
   -> a                 -- ^ start

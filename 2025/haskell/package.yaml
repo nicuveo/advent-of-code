@@ -48,6 +48,7 @@ dependencies:
   - filepath
   - hashable
   - insert-ordered-containers
+  - graphwiz
   - lens
   - monad-loops
   - monad-st
@@ -66,6 +67,7 @@ dependencies:
   - tasty-hunit
   - tasty-quickcheck
   - text
+  - text-builder
   - time
   - transformers
   - transformers-base
